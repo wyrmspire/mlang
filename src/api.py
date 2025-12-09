@@ -342,8 +342,17 @@ def get_mock_candles(
     volatility = 2.0
     trend = 0.05
     
+    # Map timeframe to seconds
+    interval_map = {
+        '1m': 60,
+        '5m': 300,
+        '15m': 900,
+        '60m': 3600,
+        '1h': 3600
+    }
+    interval_seconds = interval_map.get(timeframe, 60)  # Default to 1m if unknown
+    
     # Generate timestamp (starting from now - bars * interval)
-    interval_seconds = 60 if timeframe == '1m' else 300  # 1m or 5m
     end_time = int(datetime.now().timestamp())
     start_time = end_time - (bars * interval_seconds)
     

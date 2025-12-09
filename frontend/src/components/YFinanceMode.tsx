@@ -31,13 +31,16 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
     // Model & Trading state
     const [availableModels, setAvailableModels] = useState<string[]>([]);
     const [selectedModel, setSelectedModel] = useState<string>('CNN_Predictive_5m');
-    const [riskAmount] = useState<number>(300);
+    const riskAmount = 300; // Fixed risk per trade
     const [trades, setTrades] = useState<Trade[]>([]);
     const [totalPnL, setTotalPnL] = useState<number>(0);
     const [unrealizedPnL, setUnrealizedPnL] = useState<number>(0);
 
     // UI state
     const [isLoading, setIsLoading] = useState<boolean>(false);
+
+    // Constants
+    const ORDER_EXPIRY_SECONDS = 15 * 60; // 15 minutes
 
     // Refs
     const playbackIntervalRef = useRef<number | null>(null);
@@ -211,13 +214,17 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                 // Open Positions
                 if (t.status === 'open') {
                     let hitSL = false, hitTP = false;
-                    // Check SL/TP
+                    // Check SL/TP based on direction
                     if (t.direction === 'LONG') {
                         if (tick.low <= t.sl_price) hitSL = true;
                         else if (tick.high >= t.tp_price) hitTP = true;
                     } else if (t.direction === 'SHORT') {
                         if (tick.high >= t.sl_price) hitSL = true;
                         else if (tick.low <= t.tp_price) hitTP = true;
+                    } else {
+                        // Unknown direction - should not happen, but close position safely
+                        console.error(`Unknown position direction: ${t.direction}`);
+                        return { ...t, status: 'closed', pnl: 0, exit_time: tick.time } as Trade;
                     }
 
                     if (hitSL) {
@@ -256,9 +263,9 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                         return { ...t, status: 'closed', pnl: 0, exit_time: tick.time } as Trade;
                     }
 
-                    // Check for expiry (15 minutes = 900 seconds)
+                    // Check for expiry (15 minutes)
                     const elapsedTime = tick.time - t.entry_time;
-                    if (elapsedTime > 900) {
+                    if (elapsedTime > ORDER_EXPIRY_SECONDS) {
                         // Expired
                         return { ...t, status: 'closed', pnl: 0, exit_time: tick.time } as Trade;
                     }
