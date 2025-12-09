@@ -379,8 +379,12 @@ def get_mock_candles(
         current_price = close_price
     
     # Update cache for playback analysis
+    # Convert to DataFrame with time as column (not index) for model inference
+    df_cache = pd.DataFrame(results)
+    df_cache['time'] = pd.to_datetime(df_cache['time'], unit='s')
+    
     _last_yf_cache['symbol'] = 'MOCK'
-    _last_yf_cache['data'] = pd.DataFrame(results).set_index('time')
+    _last_yf_cache['data'] = df_cache
     _last_yf_cache['interval'] = timeframe
     
     logger.info(f"Generated {len(results)} mock candles")
@@ -471,10 +475,11 @@ def analyze_playback_candle(
     # See `_last_yf_cache` below.
 ): 
     # Need access to data
-    if _last_yf_cache['symbol'] != symbol:
+    # Allow mock data to be used for any symbol
+    if _last_yf_cache['symbol'] != symbol and _last_yf_cache['symbol'] != 'MOCK':
          # Warn or try to re-fetch?
          # If client just called get_yfinance_candles, it should be here.
-         raise HTTPException(status_code=400, detail="Data not cached. Call fetch first.")
+         raise HTTPException(status_code=400, detail=f"Data not cached for {symbol}. Call fetch first. Cached: {_last_yf_cache['symbol']}")
          
     df = _last_yf_cache['data']
     if df is None or df.empty:

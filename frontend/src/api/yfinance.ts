@@ -45,14 +45,13 @@ export interface Trade {
 }
 
 export const yfinanceApi = {
-    fetchData: async (symbol: string = 'ES=F', daysBack: number = 7, interval: string = '1m'): Promise<YFinanceData> => {
-        const res = await axios.get<YFinanceData>(`${API_URL}/api/yfinance/candles`, {
-            params: {
-                symbol,
-                days: daysBack,
-                timeframe: interval
-            }
-        });
+    fetchData: async (symbol: string = 'ES=F', daysBack: number = 7, interval: string = '1m', useMock: boolean = false): Promise<YFinanceData> => {
+        const endpoint = useMock ? '/api/yfinance/candles/mock' : '/api/yfinance/candles';
+        const params = useMock 
+            ? { bars: daysBack * (interval === '1m' ? 390 : 78), timeframe: interval }  // ~390 1m bars per day, ~78 5m bars
+            : { symbol, days: daysBack, timeframe: interval };
+            
+        const res = await axios.get<YFinanceData>(`${API_URL}${endpoint}`, { params });
         return res.data;
     },
 

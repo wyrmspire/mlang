@@ -12,6 +12,7 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
     // Data settings
     const [sourceInterval, setSourceInterval] = useState<'1m' | '5m'>('1m');
     const [loadDays, setLoadDays] = useState<number>(5);
+    const [useMockData, setUseMockData] = useState<boolean>(true); // Default to mock for testing
 
     // Data state
     const [allData, setAllData] = useState<Candle[]>([]); // Source candles (1m or 5m)
@@ -72,9 +73,9 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
         setIsLoading(true);
         try {
             // Using loadDays and sourceInterval
-            const result = await yfinanceApi.fetchData(symbol, loadDays, sourceInterval);
+            const result = await yfinanceApi.fetchData(symbol, loadDays, sourceInterval, useMockData);
 
-            if (result.success) {
+            if (result.data && result.data.length > 0) {
                 setAllData(result.data);
                 // Reset everything
                 resetPlayback(result.data);
@@ -83,7 +84,7 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
             }
         } catch (e) {
             console.error('Error loading data:', e);
-            alert('Failed to load data from YFinance');
+            alert('Failed to load data. Try enabling Mock Data mode.');
         } finally {
             setIsLoading(false);
         }
@@ -381,7 +382,17 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                     <input type="number" value={loadDays} onChange={e => setLoadDays(Number(e.target.value))} min={1} max={60} style={{ width: '100%', padding: '5px' }} />
                     <div style={{ fontSize: '10px', color: '#777' }}>Max: ~7d (1m), ~60d (5m)</div>
 
-                    <button onClick={loadData} disabled={isLoading} style={{ width: '100%', marginTop: '5px', padding: '8px', background: '#007acc', color: 'white', border: 'none' }}>
+                    <label style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                        <input 
+                            type="checkbox" 
+                            checked={useMockData} 
+                            onChange={e => setUseMockData(e.target.checked)}
+                            style={{ cursor: 'pointer' }}
+                        />
+                        <span style={{ fontSize: '12px' }}>Use Mock Data (for testing)</span>
+                    </label>
+
+                    <button onClick={loadData} disabled={isLoading} style={{ width: '100%', marginTop: '10px', padding: '8px', background: '#007acc', color: 'white', border: 'none', cursor: isLoading ? 'default' : 'pointer' }}>
                         {isLoading ? 'Loading...' : 'Load Data'}
                     </button>
                 </div>
