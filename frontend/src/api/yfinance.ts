@@ -65,8 +65,7 @@ export const yfinanceApi = {
         candleIndex: number,
         modelName: string,
         symbol: string,
-        date: string,
-        daysBack?: number
+        date: string
     ): Promise<{ signal: TradeSignal | null }> => {
         const res = await axios.post<{ signal: TradeSignal | null }>(
             `${API_URL}/api/yfinance/playback/analyze`,

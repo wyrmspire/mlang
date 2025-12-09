@@ -326,6 +326,66 @@ def get_pattern_buckets():
 
 # --- YFinance Endpoints ---
 
+@app.get("/api/yfinance/candles/mock")
+def get_mock_candles(
+    bars: int = Query(500, description="Number of bars to generate"),
+    timeframe: str = Query("1m", description="Timeframe interval")
+):
+    """
+    Generate mock OHLC data for testing playback mode.
+    Creates realistic price movement with trends and volatility.
+    """
+    import random
+    
+    # Starting parameters
+    start_price = 5800.0
+    volatility = 2.0
+    trend = 0.05
+    
+    # Generate timestamp (starting from now - bars * interval)
+    interval_seconds = 60 if timeframe == '1m' else 300  # 1m or 5m
+    end_time = int(datetime.now().timestamp())
+    start_time = end_time - (bars * interval_seconds)
+    
+    results = []
+    current_price = start_price
+    
+    for i in range(bars):
+        timestamp = start_time + (i * interval_seconds)
+        
+        # Generate OHLC
+        open_price = current_price
+        
+        # Random walk with slight trend
+        change_pct = random.gauss(trend / bars, volatility / 100)
+        close_price = open_price * (1 + change_pct)
+        
+        # High/Low with some intrabar movement
+        intrabar_range = abs(close_price - open_price) * random.uniform(1.2, 2.0)
+        high_price = max(open_price, close_price) + random.uniform(0, intrabar_range)
+        low_price = min(open_price, close_price) - random.uniform(0, intrabar_range)
+        
+        volume = random.uniform(1000, 5000)
+        
+        results.append({
+            "time": timestamp,
+            "open": round(open_price, 2),
+            "high": round(high_price, 2),
+            "low": round(low_price, 2),
+            "close": round(close_price, 2),
+            "volume": round(volume, 0)
+        })
+        
+        current_price = close_price
+    
+    # Update cache for playback analysis
+    _last_yf_cache['symbol'] = 'MOCK'
+    _last_yf_cache['data'] = pd.DataFrame(results).set_index('time')
+    _last_yf_cache['interval'] = timeframe
+    
+    logger.info(f"Generated {len(results)} mock candles")
+    return {"data": results, "symbol": "MOCK", "timeframe": timeframe}
+
 @app.get("/api/yfinance/candles")
 def get_yfinance_candles(
     symbol: str = Query("MES=F", description="Ticker symbol (e.g., MES=F, ES=F, AAPL)"),

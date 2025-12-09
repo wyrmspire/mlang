@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { yfinanceApi, Trade, TradeSignal } from '../api/yfinance';
+import { yfinanceApi, Trade } from '../api/yfinance';
 import { Candle } from '../api/client';
 import { YFinanceChart } from './YFinanceChart';
 import { Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react';
@@ -15,8 +15,6 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
 
     // Data state
     const [allData, setAllData] = useState<Candle[]>([]); // Source candles (1m or 5m)
-    const [dates, setDates] = useState<string[]>([]); // Not strictly used for yfinance fetch? Date range driven. 
-    // Actually our fetch returns "last N days". The "dates" array in API response is convenient if we want to jump.
     const [symbol, setSymbol] = useState<string>('MES=F');
 
     // Playback state
@@ -32,7 +30,7 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
     // Model & Trading state
     const [availableModels, setAvailableModels] = useState<string[]>([]);
     const [selectedModel, setSelectedModel] = useState<string>('CNN_Predictive_5m');
-    const [riskAmount, setRiskAmount] = useState<number>(300);
+    const [riskAmount] = useState<number>(300);
     const [trades, setTrades] = useState<Trade[]>([]);
     const [totalPnL, setTotalPnL] = useState<number>(0);
     const [unrealizedPnL, setUnrealizedPnL] = useState<number>(0);
@@ -137,10 +135,8 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
         setCurrentPrice(tick.close);
 
         // 1. Accumulate Candle
-        let isNewCandle = false;
         setChartCandles(prev => {
             if (prev.length === 0) {
-                isNewCandle = true;
                 // Start with first tick aligned to timeframe boundary
                 const tfSeconds = displayTimeframe * 60;
                 const alignedTime = Math.floor(tick.time / tfSeconds) * tfSeconds;
@@ -171,7 +167,6 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                 return [...prev.slice(0, -1), updated];
             } else {
                 // New candle starts
-                isNewCandle = true;
                 return [...prev, {
                     time: tickAlignedTime,
                     open: tick.open,
