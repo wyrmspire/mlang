@@ -1,0 +1,27 @@
+--- Wick Analysis (Multi-Timeframe) ---
+Loading Real Data...
+Generating Synthetic Data (20 days)...
+
+[1min Timeframe]
+Metric               | Real       | Synth      | Ratio
+--------------------------------------------------
+mean_wick_ratio      | 0.5263     | 0.4696     | 0.89x
+mean_range           | 2.0352     | 4.3005     | 2.11x
+
+[5min Timeframe]
+Metric               | Real       | Synth      | Ratio
+--------------------------------------------------
+mean_wick_ratio      | 0.5533     | 0.5017     | 0.91x
+mean_range           | 4.6816     | 10.1175    | 2.16x
+
+[15min Timeframe]
+Metric               | Real       | Synth      | Ratio
+--------------------------------------------------
+mean_wick_ratio      | 0.5515     | 0.5115     | 0.93x
+mean_range           | 8.2561     | 17.8397    | 2.16x
+
+[1h Timeframe]
+Metric               | Real       | Synth      | Ratio
+--------------------------------------------------
+mean_wick_ratio      | 0.5618     | 0.5457     | 0.97x
+mean_range           | 16.6836    | 34.9075    | 2.09x

@@ -25,3 +25,8 @@ LOCAL_TZ = "America/Chicago"  # Central Time for CME session logic
 # Generator Constants
 MIN_HOURS_FOR_PATTERN = 5  # Minimum samples to form a cluster bucket
 DEFAULT_CLUSTERS = 3        # Default k for k-means
+
+# Physics / Wickiness Controls
+GENERATOR_WICK_SCALE = 1.5      # Boost wick sizes
+GENERATOR_NOISE_FACTOR = 1.5    # Boost noise/volatility
+GENERATOR_REVERSION_PROB = 0.15 # Probability of counter-trend noise

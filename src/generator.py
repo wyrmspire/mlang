@@ -3,7 +3,7 @@ import numpy as np
 import json
 import random
 from pathlib import Path
-from src.config import ONE_MIN_PARQUET_DIR, PATTERNS_DIR, LOCAL_TZ
+from src.config import ONE_MIN_PARQUET_DIR, PATTERNS_DIR, LOCAL_TZ, GENERATOR_WICK_SCALE, GENERATOR_NOISE_FACTOR, GENERATOR_REVERSION_PROB
 from src.utils.logging_utils import get_logger
 
 logger = get_logger("generator")
@@ -316,7 +316,8 @@ class PatternGenerator:
                 VOL_SCALE = 0.4 
                 
                 # Noise Parameters
-                NOISE_SCALE = self.vol_1min_std * 0.5 # Noise is 50% of natural vol?
+                # Boost noise with GENERATOR_NOISE_FACTOR to create more intraday volatility (15m wicks)
+                NOISE_SCALE = self.vol_1min_std * 0.5 * GENERATOR_NOISE_FACTOR
                 
                 last_sim_close = current_price
                 
@@ -339,9 +340,13 @@ class PatternGenerator:
                     noise = np.random.normal(0, NOISE_SCALE)
                     
                     # 3. Anti-Persistence (Mean Reversion chance?)
-                    # If streak is long, flip sign? 
-                    # Simple "probabilistic counter-trend":
-                    # if abs(scaled_ret) > X and random < 0.1: scaled_ret *= -0.5
+                    # If the move is strong, there's a chance to revert (chop)
+                    # This breaks straight line trends and creates 15m/1h wicks.
+                    if abs(scaled_ret) > 0.0001 and random.random() < GENERATOR_REVERSION_PROB:
+                         # Flip the sign of the deterministic return component
+                         scaled_ret = -0.5 * scaled_ret 
+                         # And maybe boost noise for this candle
+                         noise *= 1.5
                     
                     final_ret = scaled_ret + noise
                     
@@ -362,9 +367,10 @@ class PatternGenerator:
                     # Ratios of wick to range
                     # This assumes shape preservation.
                     # Simpler: Just scale the High/Low deviations from Open/Close by VOL_SCALE too
+                    # Apply GENERATOR_WICK_SCALE here to boost atomic 1m wicks
                     
-                    sim_high = max(sim_open, sim_close) + (h_h - max(h_o, h_c)) * (current_price / h_c) * VOL_SCALE
-                    sim_low = min(sim_open, sim_close) - (min(h_o, h_c) - h_l) * (current_price / h_c) * VOL_SCALE
+                    sim_high = max(sim_open, sim_close) + (h_h - max(h_o, h_c)) * (current_price / h_c) * VOL_SCALE * GENERATOR_WICK_SCALE
+                    sim_low = min(sim_open, sim_close) - (min(h_o, h_c) - h_l) * (current_price / h_c) * VOL_SCALE * GENERATOR_WICK_SCALE
                     
                     # Ensure consistency
                     sim_high = max(sim_high, sim_open, sim_close)

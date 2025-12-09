@@ -258,6 +258,52 @@ def generate_multi_day(req: GenerateMultiDayRequest):
         })
     return {"data": results}
 
+@app.get("/api/setup-stats")
+def get_setup_stats(min_samples: int = 100, min_expansion_rate: float = 0.5):
+    """
+    Return setups (clusters) with basic statistics.
+    """
+    from src.config import PROCESSED_DIR
+    
+    meta_path = PROCESSED_DIR / "mes_setup_rules.json"
+    if not meta_path.exists():
+        raise HTTPException(status_code=404, detail="Setup metadata not found. Run setup_miner.py first.")
+
+    with open(meta_path, "r") as f:
+        meta = json.load(f)
+
+    setup_stats = meta.get("setup_stats", [])
+    
+    # Filter
+    filtered = [
+        s for s in setup_stats
+        if s["count"] >= min_samples and s["exp_rate"] >= min_expansion_rate
+    ]
+    
+    # Sort by expansion rate desc
+    filtered.sort(key=lambda x: x["exp_rate"], reverse=True)
+    
+    return {
+        "setups": filtered,
+        "features": meta.get("feature_cols", []),
+        "meta": meta
+    }
+
+@app.get("/api/setup-rules")
+def get_setup_rules():
+    """
+    Return the decision tree rules text.
+    """
+    from src.config import PROCESSED_DIR
+    path = PROCESSED_DIR / "mes_setup_decision_tree.json"
+    if not path.exists():
+         raise HTTPException(status_code=404, detail="Rules not found")
+         
+    with open(path, 'r') as f:
+        data = json.load(f)
+        
+    return data
+
 @app.get("/api/pattern-buckets")
 def get_pattern_buckets():
     gen = get_generator()

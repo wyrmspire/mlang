@@ -1,0 +1,161 @@
+import pandas as pd
+import numpy as np
+import torch
+from pathlib import Path
+import sys
+
+# Add project root
+sys.path.append(str(Path(__file__).parent.parent.parent))
+
+from src.config import ONE_MIN_PARQUET_DIR, PROCESSED_DIR, MODELS_DIR
+from src.utils.logging_utils import get_logger
+from src.models.cnn_model import TradeCNN
+
+logger = get_logger("rejection_strategy")
+
+class RejectionStrategy:
+    def __init__(self, 
+                 model_path: Path = MODELS_DIR / "rejection_cnn_v1.pth",
+                 risk_per_trade: float = 300.0,
+                 initial_balance: float = 50000.0,
+                 threshold: float = 0.6):
+        
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = TradeCNN().to(self.device)
+        
+        if model_path.exists():
+            self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+            self.model.eval()
+            logger.info(f"Loaded model from {model_path}")
+        else:
+            logger.error(f"Model not found at {model_path}")
+            sys.exit(1)
+            
+        self.risk_per_trade = risk_per_trade
+        self.initial_balance = initial_balance
+        self.balance = initial_balance
+        self.threshold = threshold
+        self.trades = []
+        
+    def get_prediction(self, df_window, direction):
+        # Prepare Input
+        feats = df_window[['open', 'high', 'low', 'close']].values
+        
+        mean = np.mean(feats)
+        std = np.std(feats)
+        if std == 0: std = 1.0
+        
+        feats_norm = (feats - mean) / std
+        
+        # Add batch dim
+        
+        # Add batch dim
+        inp = torch.FloatTensor(feats_norm).unsqueeze(0).to(self.device)
+        
+        with torch.no_grad():
+            prob = self.model(inp).item()
+            
+        return prob
+
+    def run_backtest(self):
+        logger.info("Starting Backtest on Test Set (Latest 20%)...")
+        
+        # Load Trades
+        trades_path = PROCESSED_DIR / "labeled_rejections_5m.parquet"
+        if not trades_path.exists():
+            logger.error("Trades file missing.")
+            return
+            
+        trades = pd.read_parquet(trades_path).sort_values('start_time')
+        
+        # Split - take last 20%
+        split_idx = int(0.8 * len(trades))
+        test_trades = trades.iloc[split_idx:].copy()
+        
+        logger.info(f"Test Set has {len(test_trades)} potential triggers.")
+        
+        # Load Candles
+        df_1m = pd.read_parquet(ONE_MIN_PARQUET_DIR / "mes_1min_all.parquet")
+        df_1m['time'] = pd.to_datetime(df_1m['time'], utc=True)
+        df_1m = df_1m.set_index('time').sort_index()
+        
+        confidences = []
+        executed_trades = []
+        
+        for idx, trade in test_trades.iterrows():
+            result = trade['outcome']
+            if result not in ['WIN', 'LOSS']: continue
+            
+            # Prepare Input Context
+            start_time = trade['start_time'] - pd.Timedelta(minutes=20)
+            end_time = trade['start_time']
+            
+            # Input window
+            window = df_1m.loc[start_time:end_time]
+            window = window[window.index < end_time]
+            
+            if len(window) < 20: continue
+            if len(window) > 20: window = window.iloc[-20:]
+            
+            # Model Inference
+            confidence = self.get_prediction(window, trade['direction'])
+            confidences.append(confidence)
+            
+            # Execute Trade ALWAYS (Threshold 0.0 check essentially)
+            if confidence >= -1.0: # Force Execute
+                pnl = 0.0
+                if result == 'WIN':
+                    pnl = self.risk_per_trade * 1.4
+                else: # LOSS
+                    pnl = -self.risk_per_trade
+                
+                self.balance += pnl
+                
+                executed_trades.append({
+                    'entry_time': trade['trigger_time'],
+                    'direction': trade['direction'],
+                    'confidence': confidence,
+                    'outcome': result,
+                    'pnl': pnl,
+                    'balance': self.balance
+                })
+        
+        # Analysis
+        if not executed_trades:
+            logger.warning("No trades executed.")
+            return
+            
+        results_df = pd.DataFrame(executed_trades)
+        wins = results_df[results_df['outcome'] == 'WIN']
+        win_rate = len(wins) / len(results_df)
+        total_pnl = results_df['pnl'].sum()
+        
+        conf_arr = np.array(confidences)
+        logger.info(f"Confidence Stats: Min={conf_arr.min():.4f}, Max={conf_arr.max():.4f}, Mean={conf_arr.mean():.4f}")
+        logger.info(f"Confidence Hist: <0.4: {np.sum(conf_arr < 0.4)}, 0.4-0.6: {np.sum((conf_arr >= 0.4) & (conf_arr < 0.6))}, >0.6: {np.sum(conf_arr >= 0.6)}")
+        
+        # Analysis
+        if not executed_trades:
+            logger.warning("No trades executed.")
+            return
+            
+        results_df = pd.DataFrame(executed_trades)
+        wins = results_df[results_df['outcome'] == 'WIN']
+        win_rate = len(wins) / len(results_df)
+        total_pnl = results_df['pnl'].sum()
+        
+        logger.info("--------------------------------------------------")
+        logger.info(f"Backtest Complete.")
+        logger.info(f"Trades Taken: {len(results_df)} / {len(test_trades)} potential")
+        logger.info(f"Win Rate: {win_rate*100:.2f}%")
+        logger.info(f"Total PnL: ${total_pnl:.2f}")
+        logger.info(f"Final Balance: ${self.balance:.2f} (Start: ${self.initial_balance})")
+        logger.info("--------------------------------------------------")
+        
+        out_path = PROCESSED_DIR / "rejection_strategy_results.csv"
+        results_df.to_csv(out_path, index=False)
+        logger.info(f"Results saved to {out_path}")
+
+if __name__ == "__main__":
+    strat = RejectionStrategy(threshold=0.6)
+    strat.run_backtest()
