@@ -410,6 +410,7 @@ class PlaybackRequest(BaseModel):
     date: str
     model_name: str = "rejection_cnn_v1"
     risk_amount: float = 300.0
+    days_back: int = 14  # History to load for analysis
 
 
 @app.post("/api/yfinance/playback/analyze")
@@ -417,7 +418,8 @@ def analyze_playback_candle(
     candle_index: int = Query(..., description="Current candle index in the data"),
     model_name: str = Query("rejection_cnn_v1", description="Model to use for analysis"),
     symbol: str = Query("ES=F", description="Symbol"),
-    date: str = Query(..., description="Date being analyzed")
+    date: str = Query(..., description="Date being analyzed"),
+    days_back: int = Query(14, description="Days of history to load")
 ):
     """
     Analyze current market conditions and return trade signal if setup is found.
@@ -428,7 +430,7 @@ def analyze_playback_candle(
         loader = get_yfinance_loader(symbol)
         
         # Fetch data for the date (will use cache if available)
-        df = loader.fetch_data(days_back=14)  # Get enough history
+        df = loader.fetch_data(days_back=days_back)  # Get enough history
         
         if df.empty:
             return {"signal": None}

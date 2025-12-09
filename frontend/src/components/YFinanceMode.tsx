@@ -118,7 +118,10 @@ export const YFinanceMode: React.FC = () => {
 
     // Check for trade signals as new candles appear
     useEffect(() => {
-        if (!isPlaying || currentIndex < 20) return; // Need history for analysis
+        // Need at least 20 candles for analysis (matches model WINDOW_SIZE)
+        const MIN_CANDLES_FOR_ANALYSIS = 20;
+        
+        if (!isPlaying || currentIndex < MIN_CANDLES_FOR_ANALYSIS) return;
 
         const checkForSignal = async () => {
             try {

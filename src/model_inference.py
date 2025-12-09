@@ -21,6 +21,17 @@ logger = get_logger("model_inference")
 class ModelInference:
     """Handles model loading and inference for trading signals."""
     
+    # Model parameters
+    WINDOW_SIZE = 20
+    ATR_PERIOD = 14
+    EXTENSION_LOOKBACK = 5
+    MIN_ATR_THRESHOLD = 5.0
+    EXTENSION_MULTIPLIER = 1.5
+    PULLBACK_THRESHOLD = 0.3
+    SL_BUFFER = 0.5
+    TP_BUFFER = 0.5
+    MIN_CONFIDENCE = 0.5
+    
     def __init__(self, model_name: str = "rejection_cnn_v1"):
         """
         Initialize model inference.
@@ -31,7 +42,6 @@ class ModelInference:
         self.model_name = model_name
         self.model = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.window_size = 20
         self._load_model()
     
     def _load_model(self):
@@ -67,7 +77,7 @@ class ModelInference:
             return None
         
         # Need at least window_size + ATR period + extension check period
-        min_required = self.window_size + 14 + 5
+        min_required = self.WINDOW_SIZE + self.ATR_PERIOD + self.EXTENSION_LOOKBACK
         if current_idx < min_required:
             return None
         
@@ -77,13 +87,13 @@ class ModelInference:
         if len(recent_5m) < 20:  # Need at least 20 5m candles
             return None
         
-        # Calculate ATR(14) on 5m data
-        atr = self._calculate_atr(recent_5m.tail(15), period=14)
+        # Calculate ATR on 5m data
+        atr = self._calculate_atr(recent_5m.tail(15), period=self.ATR_PERIOD)
         
-        if atr < 5:  # Minimum volatility filter
+        if atr < self.MIN_ATR_THRESHOLD:  # Minimum volatility filter
             return None
         
-        # Check for extension pattern (price moved 1.5x ATR from recent pivot)
+        # Check for extension pattern (price moved threshold x ATR from recent pivot)
         setup = self._check_extension_pattern(recent_5m, atr, candles_1m, current_idx)
         
         return setup
@@ -150,34 +160,34 @@ class ModelInference:
         min_low = np.min(lows)
         range_move = max_high - min_low
         
-        # Extension threshold: 1.5x ATR
-        if range_move < 1.5 * atr:
+        # Extension threshold: configurable multiplier x ATR
+        if range_move < self.EXTENSION_MULTIPLIER * atr:
             return None
         
         # Determine direction based on where price is now vs pivot
         current_price = closes[-1]
         
         # Upward extension (price went up, pulled back - potential LONG)
-        if max_high - current_price > 0.3 * range_move:
+        if max_high - current_price > self.PULLBACK_THRESHOLD * range_move:
             direction = "LONG"
             entry_price = current_price
-            sl_price = min_low - 0.5 * atr  # SL below the pivot
-            tp_price = max_high + 0.5 * atr  # TP at extension high
+            sl_price = min_low - self.SL_BUFFER * atr  # SL below the pivot
+            tp_price = max_high + self.TP_BUFFER * atr  # TP at extension high
             
         # Downward extension (price went down, pulled back - potential SHORT)
-        elif current_price - min_low > 0.3 * range_move:
+        elif current_price - min_low > self.PULLBACK_THRESHOLD * range_move:
             direction = "SHORT"
             entry_price = current_price
-            sl_price = max_high + 0.5 * atr  # SL above the pivot
-            tp_price = min_low - 0.5 * atr  # TP at extension low
+            sl_price = max_high + self.SL_BUFFER * atr  # SL above the pivot
+            tp_price = min_low - self.TP_BUFFER * atr  # TP at extension low
         else:
             return None
         
         # Get model confidence using last 20 1m candles
         confidence = self._get_model_confidence(df_1m, current_idx)
         
-        # Only take trades with > 50% confidence
-        if confidence < 0.5:
+        # Only take trades with > threshold confidence
+        if confidence < self.MIN_CONFIDENCE:
             return None
         
         return {
@@ -193,20 +203,20 @@ class ModelInference:
     def _get_model_confidence(self, df_1m: pd.DataFrame, current_idx: int) -> float:
         """
         Get model confidence score for current setup.
-        Uses last 20 1m candles before current position.
+        Uses last WINDOW_SIZE 1m candles before current position.
         """
         if self.model is None:
             return 0.5  # Neutral if no model
         
-        # Get last 20 candles
-        start_idx = max(0, current_idx - self.window_size)
+        # Get last WINDOW_SIZE candles
+        start_idx = max(0, current_idx - self.WINDOW_SIZE)
         window = df_1m.iloc[start_idx:current_idx]
         
-        if len(window) < self.window_size:
+        if len(window) < self.WINDOW_SIZE:
             return 0.5
         
-        # Take exactly last 20
-        window = window.tail(self.window_size)
+        # Take exactly last WINDOW_SIZE
+        window = window.tail(self.WINDOW_SIZE)
         
         # Extract OHLC features
         feats = window[['open', 'high', 'low', 'close']].values
