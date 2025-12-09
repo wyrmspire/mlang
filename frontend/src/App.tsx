@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { SidebarControls } from './components/SidebarControls';
 import { ChartPanel } from './components/ChartPanel';
+import { YFinanceMode } from './components/YFinanceMode';
 import { api, Candle } from './api/client';
 
+type AppMode = 'pattern' | 'yfinance';
+
 const App: React.FC = () => {
+    // Mode selection
+    const [mode, setMode] = useState<AppMode>('pattern');
+
     // Data State
     const [dates, setDates] = useState<string[]>([]);
 
@@ -29,8 +35,10 @@ const App: React.FC = () => {
 
     // Initial Load
     useEffect(() => {
-        loadDates();
-    }, []);
+        if (mode === 'pattern') {
+            loadDates();
+        }
+    }, [mode]);
 
     const loadDates = async () => {
         try {
@@ -141,51 +149,100 @@ const App: React.FC = () => {
     };
 
     return (
-        <div style={{ display: 'flex', height: '100vh', background: '#1E1E1E', color: '#EEE' }}>
-            <SidebarControls
-                dates={dates}
-                selectedDate={selectedDate}
-                onDateChange={setSelectedDate}
-                timeframe={timeframe}
-                onTimeframeChange={setTimeframe}
-                onGenerate={handleGenerate}
-                isGenerating={isGenerating}
-                dayOfWeek={genDayOfWeek}
-                setDayOfWeek={setGenDayOfWeek}
-                sessionType={genSessionType}
-                setSessionType={setGenSessionType}
-                onClearSynthetic={() => {
-                    setSyntheticData([]);
-                    setMultiDaySynth([]);
-                }}
-
-                // Multi
-                isMultiDay={isMultiDay}
-                setIsMultiDay={setIsMultiDay}
-                numDays={numDays}
-                setNumDays={setNumDays}
-                startDate={startDate}
-                setStartDate={setStartDate}
-            />
-
-            <div style={{ flex: 1, padding: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {!isMultiDay ? (
-                    // Single Pane with Overlay
-                    <div style={{ flex: 1, overflow: 'hidden' }}>
-                        <ChartPanel data={candles} syntheticData={syntheticData} title={`Historical: ${selectedDate}`} />
-                    </div>
-                ) : (
-                    // Split Pane
-                    <>
-                        <div style={{ flex: 1, border: '1px solid #444', overflow: 'hidden' }}>
-                            <ChartPanel data={multiDayReal} title={`Real Data (${startDate} + ${numDays} days)`} />
-                        </div>
-                        <div style={{ flex: 1, border: '1px solid #444', overflow: 'hidden' }}>
-                            <ChartPanel data={multiDaySynth} title="Synthetic Generated Path" />
-                        </div>
-                    </>
-                )}
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#1E1E1E', color: '#EEE' }}>
+            {/* Top Menu Bar */}
+            <div style={{ 
+                display: 'flex', 
+                gap: '0', 
+                background: '#252526', 
+                borderBottom: '1px solid #333',
+                padding: '0'
+            }}>
+                <button
+                    onClick={() => setMode('pattern')}
+                    style={{
+                        padding: '15px 30px',
+                        background: mode === 'pattern' ? '#1E1E1E' : 'transparent',
+                        color: mode === 'pattern' ? '#4FC3F7' : '#AAA',
+                        border: 'none',
+                        borderBottom: mode === 'pattern' ? '2px solid #4FC3F7' : '2px solid transparent',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: mode === 'pattern' ? 'bold' : 'normal',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    Pattern Generator
+                </button>
+                <button
+                    onClick={() => setMode('yfinance')}
+                    style={{
+                        padding: '15px 30px',
+                        background: mode === 'yfinance' ? '#1E1E1E' : 'transparent',
+                        color: mode === 'yfinance' ? '#4FC3F7' : '#AAA',
+                        border: 'none',
+                        borderBottom: mode === 'yfinance' ? '2px solid #4FC3F7' : '2px solid transparent',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: mode === 'yfinance' ? 'bold' : 'normal',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    YFinance Playback
+                </button>
             </div>
+
+            {/* Content */}
+            {mode === 'yfinance' ? (
+                <YFinanceMode />
+            ) : (
+                <div style={{ display: 'flex', height: 'calc(100vh - 52px)' }}>
+                    <SidebarControls
+                        dates={dates}
+                        selectedDate={selectedDate}
+                        onDateChange={setSelectedDate}
+                        timeframe={timeframe}
+                        onTimeframeChange={setTimeframe}
+                        onGenerate={handleGenerate}
+                        isGenerating={isGenerating}
+                        dayOfWeek={genDayOfWeek}
+                        setDayOfWeek={setGenDayOfWeek}
+                        sessionType={genSessionType}
+                        setSessionType={setGenSessionType}
+                        onClearSynthetic={() => {
+                            setSyntheticData([]);
+                            setMultiDaySynth([]);
+                        }}
+
+                        // Multi
+                        isMultiDay={isMultiDay}
+                        setIsMultiDay={setIsMultiDay}
+                        numDays={numDays}
+                        setNumDays={setNumDays}
+                        startDate={startDate}
+                        setStartDate={setStartDate}
+                    />
+
+                    <div style={{ flex: 1, padding: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {!isMultiDay ? (
+                            // Single Pane with Overlay
+                            <div style={{ flex: 1, overflow: 'hidden' }}>
+                                <ChartPanel data={candles} syntheticData={syntheticData} title={`Historical: ${selectedDate}`} />
+                            </div>
+                        ) : (
+                            // Split Pane
+                            <>
+                                <div style={{ flex: 1, border: '1px solid #444', overflow: 'hidden' }}>
+                                    <ChartPanel data={multiDayReal} title={`Real Data (${startDate} + ${numDays} days)`} />
+                                </div>
+                                <div style={{ flex: 1, border: '1px solid #444', overflow: 'hidden' }}>
+                                    <ChartPanel data={multiDaySynth} title="Synthetic Generated Path" />
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

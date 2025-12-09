@@ -7,10 +7,13 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from typing import List, Optional, Dict, Any
+import json
 
 from src.config import ONE_MIN_PARQUET_DIR, PATTERNS_DIR, LOCAL_TZ
 from src.generator import get_generator
 from src.utils.logging_utils import get_logger
+from src.yfinance_loader import get_yfinance_loader
+from src.model_inference import ModelInference, get_available_models
 
 logger = get_logger("api")
 
@@ -320,3 +323,145 @@ def get_pattern_buckets():
             "samples": m['total_samples']
         })
     return summary
+
+
+# ============================================================================
+# YFinance Endpoints for Historical Playback
+# ============================================================================
+
+class YFinanceFetchRequest(BaseModel):
+    symbol: str = "ES=F"
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    days_back: int = 7
+
+
+class TradeSignal(BaseModel):
+    direction: str
+    entry_price: float
+    sl_price: float
+    tp_price: float
+    confidence: float
+    entry_time: float
+
+
+@app.get("/api/yfinance/models")
+def get_models_list():
+    """Get list of available trained models."""
+    try:
+        models = get_available_models()
+        return {"models": models}
+    except Exception as e:
+        logger.error(f"Error fetching models: {e}")
+        return {"models": []}
+
+
+@app.post("/api/yfinance/fetch")
+def fetch_yfinance_data(req: YFinanceFetchRequest):
+    """
+    Fetch data from YFinance.
+    Returns 1-minute candles for the specified period.
+    """
+    try:
+        loader = get_yfinance_loader(req.symbol)
+        df = loader.fetch_data(
+            start_date=req.start_date,
+            end_date=req.end_date,
+            days_back=req.days_back
+        )
+        
+        if df.empty:
+            return {
+                "success": False,
+                "message": "No data available for the specified period",
+                "data": [],
+                "dates": []
+            }
+        
+        # Get available dates
+        dates = loader.get_available_dates(df)
+        
+        # Convert to list of candles
+        candles = []
+        for _, row in df.iterrows():
+            candles.append({
+                "time": int(row['time'].timestamp()),
+                "open": float(row['open']),
+                "high": float(row['high']),
+                "low": float(row['low']),
+                "close": float(row['close']),
+                "volume": float(row['volume'])
+            })
+        
+        return {
+            "success": True,
+            "data": candles,
+            "dates": dates,
+            "symbol": req.symbol
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching YFinance data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class PlaybackRequest(BaseModel):
+    symbol: str = "ES=F"
+    date: str
+    model_name: str = "rejection_cnn_v1"
+    risk_amount: float = 300.0
+
+
+@app.post("/api/yfinance/playback/analyze")
+def analyze_playback_candle(
+    candle_index: int = Query(..., description="Current candle index in the data"),
+    model_name: str = Query("rejection_cnn_v1", description="Model to use for analysis"),
+    symbol: str = Query("ES=F", description="Symbol"),
+    date: str = Query(..., description="Date being analyzed")
+):
+    """
+    Analyze current market conditions and return trade signal if setup is found.
+    This simulates real-time analysis during playback.
+    """
+    try:
+        # Get the data from cache
+        loader = get_yfinance_loader(symbol)
+        
+        # Fetch data for the date (will use cache if available)
+        df = loader.fetch_data(days_back=14)  # Get enough history
+        
+        if df.empty:
+            return {"signal": None}
+        
+        # Filter to requested date and earlier (can only look back)
+        df = df[df['date'] <= date].copy()
+        
+        if len(df) <= candle_index:
+            return {"signal": None}
+        
+        # Initialize model inference
+        model_inf = ModelInference(model_name)
+        
+        # Check for trading setup at current position
+        setup = model_inf.check_for_setup(df, candle_index)
+        
+        if setup is None:
+            return {"signal": None}
+        
+        # Return signal with entry time
+        return {
+            "signal": {
+                "direction": setup["direction"],
+                "entry_price": setup["entry_price"],
+                "sl_price": setup["sl_price"],
+                "tp_price": setup["tp_price"],
+                "confidence": setup["confidence"],
+                "entry_time": int(df.iloc[candle_index]['time'].timestamp()),
+                "atr": setup.get("atr", 0),
+                "setup_type": setup.get("setup_type", "unknown")
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error analyzing playback: {e}")
+        return {"signal": None}
