@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
@@ -13,6 +15,18 @@ from src.utils.logging_utils import get_logger
 logger = get_logger("api")
 
 app = FastAPI(title="MES Pattern Generator API")
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    body = await request.body()
+    logger.error(f"Validation Error: {exc.errors()}")
+    logger.error(f"Request Body: {body.decode()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": body.decode()},
+    )
+
+# Allow CORS for frontend
 
 # Allow CORS for frontend
 app.add_middleware(

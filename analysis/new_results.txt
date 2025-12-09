@@ -1,0 +1,177 @@
+Computing Real Stats...
+Generating Synthetic Data...
+2025-12-08 20:06:21,788 - generator - INFO - Loading generator data...
+2025-12-08 20:06:21,844 - generator - INFO - Physics Baseline: Range=82.05, 1mVol=0.000410
+2025-12-08 20:06:21,844 - generator - INFO - Generating 20 days starting from 2024-01-01
+2025-12-08 20:06:21,848 - generator - INFO -   -> Day 0 (DOW 0): Cluster 1 | Source: 2025-04-07 14:00:00+00:00
+2025-12-08 20:06:21,860 - generator - INFO -   -> Day 0 (DOW 0): Cluster 1 | Source: 2025-04-10 15:00:00+00:00
+2025-12-08 20:06:21,865 - generator - INFO -   -> Day 0 (DOW 0): Cluster 1 | Source: 2025-04-08 16:00:00+00:00
+2025-12-08 20:06:21,870 - generator - INFO -   -> Day 0 (DOW 0): Cluster 1 | Source: 2025-04-22 17:00:00+00:00
+2025-12-08 20:06:21,874 - generator - WARNING -   -> Forced to reuse date for DOW 0 Cluster 1
+2025-12-08 20:06:21,875 - generator - INFO -   -> Day 0 (DOW 0): Cluster 1 | Source: 2025-04-08 18:00:00+00:00
+2025-12-08 20:06:21,878 - generator - INFO -   -> Day 0 (DOW 0): Cluster 0 | Source: 2025-03-31 19:00:00+00:00
+2025-12-08 20:06:21,882 - generator - INFO -   -> Day 1 (DOW 1): Cluster 1 | Source: 2025-09-05 14:00:00+00:00
+2025-12-08 20:06:21,886 - generator - WARNING -   -> Forced to reuse date for DOW 1 Cluster 1
+2025-12-08 20:06:21,886 - generator - INFO -   -> Day 1 (DOW 1): Cluster 1 | Source: 2025-04-07 15:00:00+00:00
+2025-12-08 20:06:21,889 - generator - WARNING -   -> Forced to reuse date for DOW 1 Cluster 1
+2025-12-08 20:06:21,890 - generator - INFO -   -> Day 1 (DOW 1): Cluster 1 | Source: 2025-04-08 16:00:00+00:00
+2025-12-08 20:06:21,893 - generator - WARNING -   -> Forced to reuse date for DOW 1 Cluster 1
+2025-12-08 20:06:21,893 - generator - INFO -   -> Day 1 (DOW 1): Cluster 1 | Source: 2025-04-08 17:00:00+00:00
+2025-12-08 20:06:21,897 - generator - WARNING -   -> Forced to reuse date for DOW 1 Cluster 1
+2025-12-08 20:06:21,897 - generator - INFO -   -> Day 1 (DOW 1): Cluster 1 | Source: 2025-04-07 18:00:00+00:00
+2025-12-08 20:06:21,900 - generator - WARNING -   -> Forced to reuse date for DOW 1 Cluster 1
+2025-12-08 20:06:21,900 - generator - INFO -   -> Day 1 (DOW 1): Cluster 1 | Source: 2025-04-08 19:00:00+00:00
+2025-12-08 20:06:21,904 - generator - INFO -   -> Day 2 (DOW 2): Cluster 1 | Source: 2025-05-09 14:00:00+00:00
+2025-12-08 20:06:21,908 - generator - INFO -   -> Day 2 (DOW 2): Cluster 1 | Source: 2025-07-11 15:00:00+00:00
+2025-12-08 20:06:21,917 - generator - INFO -   -> Day 2 (DOW 2): Cluster 1 | Source: 2025-04-09 16:00:00+00:00
+2025-12-08 20:06:21,920 - generator - WARNING -   -> Forced to reuse date for DOW 2 Cluster 1
+2025-12-08 20:06:21,921 - generator - INFO -   -> Day 2 (DOW 2): Cluster 1 | Source: 2025-04-09 17:00:00+00:00
+2025-12-08 20:06:21,925 - generator - WARNING -   -> Forced to reuse date for DOW 2 Cluster 1
+2025-12-08 20:06:21,925 - generator - INFO -   -> Day 2 (DOW 2): Cluster 1 | Source: 2025-04-08 18:00:00+00:00
+2025-12-08 20:06:21,929 - generator - WARNING -   -> Forced to reuse date for DOW 2 Cluster 1
+2025-12-08 20:06:21,930 - generator - INFO -   -> Day 2 (DOW 2): Cluster 1 | Source: 2025-04-08 19:00:00+00:00
+2025-12-08 20:06:21,936 - generator - INFO -   -> Day 3 (DOW 3): Cluster 0 | Source: 2025-05-22 14:00:00+00:00
+2025-12-08 20:06:21,942 - generator - INFO -   -> Day 3 (DOW 3): Cluster 1 | Source: 2025-06-20 15:00:00+00:00
+2025-12-08 20:06:21,946 - generator - INFO -   -> Day 3 (DOW 3): Cluster 0 | Source: 2025-04-04 16:00:00+00:00
+2025-12-08 20:06:21,951 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:21,951 - generator - INFO -   -> Day 3 (DOW 3): Cluster 1 | Source: 2025-04-10 17:00:00+00:00
+2025-12-08 20:06:21,955 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:21,956 - generator - INFO -   -> Day 3 (DOW 3): Cluster 1 | Source: 2025-04-04 18:00:00+00:00
+2025-12-08 20:06:21,960 - generator - INFO -   -> Day 3 (DOW 3): Cluster 0 | Source: 2025-07-31 19:00:00+00:00
+2025-12-08 20:06:21,965 - generator - INFO -   -> Day 4 (DOW 4): Cluster 0 | Source: 2025-06-06 14:00:00+00:00
+2025-12-08 20:06:21,969 - generator - INFO -   -> Day 4 (DOW 4): Cluster 1 | Source: 2025-05-30 15:00:00+00:00
+2025-12-08 20:06:21,974 - generator - INFO -   -> Day 4 (DOW 4): Cluster 0 | Source: 2025-07-04 16:00:00+00:00
+2025-12-08 20:06:21,979 - generator - INFO -   -> Day 4 (DOW 4): Cluster 0 | Source: 2025-06-02 17:00:00+00:00
+2025-12-08 20:06:21,983 - generator - INFO -   -> Day 4 (DOW 4): Cluster 0 | Source: 2025-07-18 18:00:00+00:00
+2025-12-08 20:06:21,987 - generator - WARNING -   -> Forced to reuse date for DOW 4 Cluster 1
+2025-12-08 20:06:21,987 - generator - INFO -   -> Day 4 (DOW 4): Cluster 1 | Source: 2025-04-04 19:00:00+00:00
+2025-12-08 20:06:21,995 - generator - WARNING -   -> Forced to reuse date for DOW 0 Cluster 1
+2025-12-08 20:06:21,996 - generator - INFO -   -> Day 5 (DOW 0): Cluster 1 | Source: 2025-04-07 14:00:00+00:00
+2025-12-08 20:06:22,002 - generator - INFO -   -> Day 5 (DOW 0): Cluster 0 | Source: 2025-07-28 15:00:00+00:00
+2025-12-08 20:06:22,006 - generator - INFO -   -> Day 5 (DOW 0): Cluster 0 | Source: 2025-06-09 16:00:00+00:00
+2025-12-08 20:06:22,011 - generator - INFO -   -> Day 5 (DOW 0): Cluster 0 | Source: 2025-03-28 17:00:00+00:00
+2025-12-08 20:06:22,015 - generator - INFO -   -> Day 5 (DOW 0): Cluster 0 | Source: 2025-04-21 18:00:00+00:00
+2025-12-08 20:06:22,018 - generator - INFO -   -> Day 5 (DOW 0): Cluster 1 | Source: 2025-09-15 19:00:00+00:00
+2025-12-08 20:06:22,024 - generator - INFO -   -> Day 6 (DOW 1): Cluster 1 | Source: 2025-07-15 14:00:00+00:00
+2025-12-08 20:06:22,030 - generator - INFO -   -> Day 6 (DOW 1): Cluster 0 | Source: 2025-07-16 15:00:00+00:00
+2025-12-08 20:06:22,037 - generator - WARNING -   -> Forced to reuse date for DOW 1 Cluster 1
+2025-12-08 20:06:22,037 - generator - INFO -   -> Day 6 (DOW 1): Cluster 1 | Source: 2025-04-08 16:00:00+00:00
+2025-12-08 20:06:22,043 - generator - INFO -   -> Day 6 (DOW 1): Cluster 0 | Source: 2025-06-13 17:00:00+00:00
+2025-12-08 20:06:22,048 - generator - WARNING -   -> Forced to reuse date for DOW 1 Cluster 1
+2025-12-08 20:06:22,049 - generator - INFO -   -> Day 6 (DOW 1): Cluster 1 | Source: 2025-04-08 18:00:00+00:00
+2025-12-08 20:06:22,055 - generator - WARNING -   -> Forced to reuse date for DOW 1 Cluster 1
+2025-12-08 20:06:22,056 - generator - INFO -   -> Day 6 (DOW 1): Cluster 1 | Source: 2025-04-09 19:00:00+00:00
+2025-12-08 20:06:22,061 - generator - INFO -   -> Day 7 (DOW 2): Cluster 0 | Source: 2025-04-17 14:00:00+00:00
+2025-12-08 20:06:22,067 - generator - INFO -   -> Day 7 (DOW 2): Cluster 1 | Source: 2025-03-18 15:00:00+00:00
+2025-12-08 20:06:22,071 - generator - INFO -   -> Day 7 (DOW 2): Cluster 0 | Source: 2025-08-18 16:00:00+00:00
+2025-12-08 20:06:22,075 - generator - WARNING -   -> Forced to reuse date for DOW 2 Cluster 1
+2025-12-08 20:06:22,075 - generator - INFO -   -> Day 7 (DOW 2): Cluster 1 | Source: 2025-04-09 17:00:00+00:00
+2025-12-08 20:06:22,080 - generator - INFO -   -> Day 7 (DOW 2): Cluster 0 | Source: 2025-04-02 18:00:00+00:00
+2025-12-08 20:06:22,086 - generator - INFO -   -> Day 7 (DOW 2): Cluster 0 | Source: 2025-05-01 19:00:00+00:00
+2025-12-08 20:06:22,092 - generator - INFO -   -> Day 8 (DOW 3): Cluster 1 | Source: 2025-04-11 14:00:00+00:00
+2025-12-08 20:06:22,099 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:22,099 - generator - INFO -   -> Day 8 (DOW 3): Cluster 1 | Source: 2025-04-10 15:00:00+00:00
+2025-12-08 20:06:22,106 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:22,106 - generator - INFO -   -> Day 8 (DOW 3): Cluster 1 | Source: 2025-04-10 16:00:00+00:00
+2025-12-08 20:06:22,112 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:22,112 - generator - INFO -   -> Day 8 (DOW 3): Cluster 1 | Source: 2025-04-10 17:00:00+00:00
+2025-12-08 20:06:22,117 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:22,117 - generator - INFO -   -> Day 8 (DOW 3): Cluster 1 | Source: 2025-04-10 18:00:00+00:00
+2025-12-08 20:06:22,123 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:22,124 - generator - INFO -   -> Day 8 (DOW 3): Cluster 1 | Source: 2025-04-09 19:00:00+00:00
+2025-12-08 20:06:22,130 - generator - INFO -   -> Day 9 (DOW 4): Cluster 0 | Source: 2025-04-03 14:00:00+00:00
+2025-12-08 20:06:22,138 - generator - INFO -   -> Day 9 (DOW 4): Cluster 1 | Source: 2025-03-21 15:00:00+00:00
+2025-12-08 20:06:22,145 - generator - INFO -   -> Day 9 (DOW 4): Cluster 0 | Source: 2025-07-25 16:00:00+00:00
+2025-12-08 20:06:22,152 - generator - INFO -   -> Day 9 (DOW 4): Cluster 0 | Source: 2025-04-25 17:00:00+00:00
+2025-12-08 20:06:22,158 - generator - WARNING -   -> Forced to reuse date for DOW 4 Cluster 1
+2025-12-08 20:06:22,159 - generator - INFO -   -> Day 9 (DOW 4): Cluster 1 | Source: 2025-04-08 18:00:00+00:00
+2025-12-08 20:06:22,164 - generator - WARNING -   -> Forced to reuse date for DOW 4 Cluster 1
+2025-12-08 20:06:22,165 - generator - INFO -   -> Day 9 (DOW 4): Cluster 1 | Source: 2025-04-04 19:00:00+00:00
+2025-12-08 20:06:22,172 - generator - INFO -   -> Day 10 (DOW 0): Cluster 1 | Source: 2025-09-16 14:00:00+00:00
+2025-12-08 20:06:22,177 - generator - WARNING -   -> Forced to reuse date for DOW 0 Cluster 1
+2025-12-08 20:06:22,178 - generator - INFO -   -> Day 10 (DOW 0): Cluster 1 | Source: 2025-04-07 15:00:00+00:00
+2025-12-08 20:06:22,183 - generator - INFO -   -> Day 10 (DOW 0): Cluster 0 | Source: 2025-05-05 16:00:00+00:00
+2025-12-08 20:06:22,187 - generator - WARNING -   -> Forced to reuse date for DOW 0 Cluster 1
+2025-12-08 20:06:22,188 - generator - INFO -   -> Day 10 (DOW 0): Cluster 1 | Source: 2025-04-07 17:00:00+00:00
+2025-12-08 20:06:22,192 - generator - INFO -   -> Day 10 (DOW 0): Cluster 0 | Source: 2025-06-23 18:00:00+00:00
+2025-12-08 20:06:22,196 - generator - INFO -   -> Day 10 (DOW 0): Cluster 1 | Source: 2025-07-14 19:00:00+00:00
+2025-12-08 20:06:22,200 - generator - INFO -   -> Day 11 (DOW 1): Cluster 1 | Source: 2025-06-17 14:00:00+00:00
+2025-12-08 20:06:22,205 - generator - INFO -   -> Day 11 (DOW 1): Cluster 0 | Source: 2025-05-07 15:00:00+00:00
+2025-12-08 20:06:22,209 - generator - WARNING -   -> Forced to reuse date for DOW 1 Cluster 1
+2025-12-08 20:06:22,209 - generator - INFO -   -> Day 11 (DOW 1): Cluster 1 | Source: 2025-04-08 16:00:00+00:00
+2025-12-08 20:06:22,215 - generator - INFO -   -> Day 11 (DOW 1): Cluster 0 | Source: 2025-04-15 17:00:00+00:00
+2025-12-08 20:06:22,221 - generator - WARNING -   -> Forced to reuse date for DOW 1 Cluster 1
+2025-12-08 20:06:22,221 - generator - INFO -   -> Day 11 (DOW 1): Cluster 1 | Source: 2025-04-07 18:00:00+00:00
+2025-12-08 20:06:22,226 - generator - WARNING -   -> Forced to reuse date for DOW 1 Cluster 1
+2025-12-08 20:06:22,227 - generator - INFO -   -> Day 11 (DOW 1): Cluster 1 | Source: 2025-04-08 19:00:00+00:00
+2025-12-08 20:06:22,233 - generator - INFO -   -> Day 12 (DOW 2): Cluster 0 | Source: 2025-08-06 14:00:00+00:00
+2025-12-08 20:06:22,237 - generator - INFO -   -> Day 12 (DOW 2): Cluster 0 | Source: 2025-06-25 15:00:00+00:00
+2025-12-08 20:06:22,241 - generator - WARNING -   -> Forced to reuse date for DOW 2 Cluster 1
+2025-12-08 20:06:22,242 - generator - INFO -   -> Day 12 (DOW 2): Cluster 1 | Source: 2025-04-10 16:00:00+00:00
+2025-12-08 20:06:22,246 - generator - WARNING -   -> Forced to reuse date for DOW 2 Cluster 1
+2025-12-08 20:06:22,246 - generator - INFO -   -> Day 12 (DOW 2): Cluster 1 | Source: 2025-04-09 17:00:00+00:00
+2025-12-08 20:06:22,251 - generator - INFO -   -> Day 12 (DOW 2): Cluster 0 | Source: 2025-09-17 18:00:00+00:00
+2025-12-08 20:06:22,256 - generator - WARNING -   -> Forced to reuse date for DOW 2 Cluster 1
+2025-12-08 20:06:22,256 - generator - INFO -   -> Day 12 (DOW 2): Cluster 1 | Source: 2025-04-08 19:00:00+00:00
+2025-12-08 20:06:22,262 - generator - INFO -   -> Day 13 (DOW 3): Cluster 0 | Source: 2025-08-07 14:00:00+00:00
+2025-12-08 20:06:22,268 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:22,269 - generator - INFO -   -> Day 13 (DOW 3): Cluster 1 | Source: 2025-04-10 15:00:00+00:00
+2025-12-08 20:06:22,275 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:22,276 - generator - INFO -   -> Day 13 (DOW 3): Cluster 1 | Source: 2025-04-07 16:00:00+00:00
+2025-12-08 20:06:22,281 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:22,282 - generator - INFO -   -> Day 13 (DOW 3): Cluster 1 | Source: 2025-04-07 17:00:00+00:00
+2025-12-08 20:06:22,288 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:22,288 - generator - INFO -   -> Day 13 (DOW 3): Cluster 1 | Source: 2025-04-10 18:00:00+00:00
+2025-12-08 20:06:22,294 - generator - INFO -   -> Day 13 (DOW 3): Cluster 0 | Source: 2025-06-05 19:00:00+00:00
+2025-12-08 20:06:22,299 - generator - INFO -   -> Day 14 (DOW 4): Cluster 0 | Source: 2025-08-01 14:00:00+00:00
+2025-12-08 20:06:22,304 - generator - INFO -   -> Day 14 (DOW 4): Cluster 1 | Source: 2025-06-27 15:00:00+00:00
+2025-12-08 20:06:22,308 - generator - INFO -   -> Day 14 (DOW 4): Cluster 0 | Source: 2025-08-08 16:00:00+00:00
+2025-12-08 20:06:22,313 - generator - INFO -   -> Day 14 (DOW 4): Cluster 0 | Source: 2025-08-29 17:00:00+00:00
+2025-12-08 20:06:22,318 - generator - WARNING -   -> Forced to reuse date for DOW 4 Cluster 1
+2025-12-08 20:06:22,318 - generator - INFO -   -> Day 14 (DOW 4): Cluster 1 | Source: 2025-04-04 18:00:00+00:00
+2025-12-08 20:06:22,325 - generator - INFO -   -> Day 14 (DOW 4): Cluster 0 | Source: 2025-05-08 19:00:00+00:00
+2025-12-08 20:06:22,332 - generator - INFO -   -> Day 15 (DOW 0): Cluster 1 | Source: 2025-07-08 14:00:00+00:00
+2025-12-08 20:06:22,337 - generator - INFO -   -> Day 15 (DOW 0): Cluster 1 | Source: 2025-05-06 15:00:00+00:00
+2025-12-08 20:06:22,341 - generator - INFO -   -> Day 15 (DOW 0): Cluster 0 | Source: 2025-06-04 16:00:00+00:00
+2025-12-08 20:06:22,347 - generator - INFO -   -> Day 15 (DOW 0): Cluster 0 | Source: 2025-08-04 17:00:00+00:00
+2025-12-08 20:06:22,355 - generator - INFO -   -> Day 15 (DOW 0): Cluster 0 | Source: 2025-05-23 18:00:00+00:00
+2025-12-08 20:06:22,362 - generator - INFO -   -> Day 15 (DOW 0): Cluster 0 | Source: 2025-04-28 19:00:00+00:00
+2025-12-08 20:06:22,368 - generator - INFO -   -> Day 16 (DOW 1): Cluster 0 | Source: 2025-08-13 14:00:00+00:00
+2025-12-08 20:06:22,374 - generator - INFO -   -> Day 16 (DOW 1): Cluster 0 | Source: 2025-05-29 15:00:00+00:00
+2025-12-08 20:06:22,384 - generator - INFO -   -> Day 16 (DOW 1): Cluster 0 | Source: 2025-05-12 16:00:00+00:00
+2025-12-08 20:06:22,390 - generator - INFO -   -> Day 16 (DOW 1): Cluster 0 | Source: 2025-05-19 17:00:00+00:00
+2025-12-08 20:06:22,394 - generator - INFO -   -> Day 16 (DOW 1): Cluster 0 | Source: 2025-07-29 18:00:00+00:00
+2025-12-08 20:06:22,398 - generator - INFO -   -> Day 16 (DOW 1): Cluster 1 | Source: 2025-07-21 19:00:00+00:00
+2025-12-08 20:06:22,402 - generator - INFO -   -> Day 17 (DOW 2): Cluster 0 | Source: 2025-08-25 14:00:00+00:00
+2025-12-08 20:06:22,408 - generator - INFO -   -> Day 17 (DOW 2): Cluster 1 | Source: 2025-06-10 15:00:00+00:00
+2025-12-08 20:06:22,413 - generator - INFO -   -> Day 17 (DOW 2): Cluster 0 | Source: 2025-08-26 16:00:00+00:00
+2025-12-08 20:06:22,416 - generator - INFO -   -> Day 17 (DOW 2): Cluster 0 | Source: 2025-06-24 17:00:00+00:00
+2025-12-08 20:06:22,421 - generator - INFO -   -> Day 17 (DOW 2): Cluster 0 | Source: 2025-06-11 18:00:00+00:00
+2025-12-08 20:06:22,425 - generator - WARNING -   -> Forced to reuse date for DOW 2 Cluster 1
+2025-12-08 20:06:22,425 - generator - INFO -   -> Day 17 (DOW 2): Cluster 1 | Source: 2025-04-09 19:00:00+00:00
+2025-12-08 20:06:22,429 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 0
+2025-12-08 20:06:22,430 - generator - INFO -   -> Day 18 (DOW 3): Cluster 0 | Source: 2025-04-10 14:00:00+00:00
+2025-12-08 20:06:22,434 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 1
+2025-12-08 20:06:22,434 - generator - INFO -   -> Day 18 (DOW 3): Cluster 1 | Source: 2025-04-10 15:00:00+00:00
+2025-12-08 20:06:22,439 - generator - INFO -   -> Day 18 (DOW 3): Cluster 0 | Source: 2025-07-17 16:00:00+00:00
+2025-12-08 20:06:22,444 - generator - INFO -   -> Day 18 (DOW 3): Cluster 0 | Source: 2025-08-15 17:00:00+00:00
+2025-12-08 20:06:22,450 - generator - INFO -   -> Day 18 (DOW 3): Cluster 0 | Source: 2025-06-26 18:00:00+00:00
+2025-12-08 20:06:22,455 - generator - WARNING -   -> Forced to reuse date for DOW 3 Cluster 0
+2025-12-08 20:06:22,455 - generator - INFO -   -> Day 18 (DOW 3): Cluster 0 | Source: 2025-07-31 19:00:00+00:00
+2025-12-08 20:06:22,459 - generator - WARNING -   -> Forced to reuse date for DOW 4 Cluster 0
+2025-12-08 20:06:22,460 - generator - INFO -   -> Day 19 (DOW 4): Cluster 0 | Source: 2025-04-10 14:00:00+00:00
+2025-12-08 20:06:22,464 - generator - INFO -   -> Day 19 (DOW 4): Cluster 1 | Source: 2025-08-22 15:00:00+00:00
+2025-12-08 20:06:22,467 - generator - INFO -   -> Day 19 (DOW 4): Cluster 0 | Source: 2025-05-02 16:00:00+00:00
+2025-12-08 20:06:22,471 - generator - INFO -   -> Day 19 (DOW 4): Cluster 0 | Source: 2025-05-13 17:00:00+00:00
+2025-12-08 20:06:22,475 - generator - INFO -   -> Day 19 (DOW 4): Cluster 0 | Source: 2025-04-16 18:00:00+00:00
+2025-12-08 20:06:22,479 - generator - INFO -   -> Day 19 (DOW 4): Cluster 0 | Source: 2025-05-28 19:00:00+00:00
+Metric                    | Real            | Synthetic       | Diff
+----------------------------------------------------------------------
+daily_range_mean          | 82.05           | 112.70          | +37.4%
+daily_range_std           | 81.85           | 59.15           | -27.7%
+daily_move_mean           | 43.22           | 56.12           | +29.8%
+max_streak_5m             | 14.00           | 9.00            | -35.7%
+avg_streak_5m             | 1.99            | 2.09            | +5.0%
+streak_95pct              | 5.00            | 5.00            | +0.0%
+----------------------------------------------------------------------
+Total Drift (10d): -40.97

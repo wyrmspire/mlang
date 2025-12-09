@@ -8,18 +8,24 @@ def get_logger(name: str):
     logger.setLevel(logging.INFO)
     
     if not logger.handlers:
+        # Formatter
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        
         # Console Handler
         c_handler = logging.StreamHandler(sys.stdout)
-        c_handler.setLevel(logging.INFO)
-        c_format = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-        c_handler.setFormatter(c_format)
+        c_handler.setFormatter(formatter)
         logger.addHandler(c_handler)
         
         # File Handler
-        f_handler = logging.FileHandler(LOGS_DIR / "app.log")
-        f_handler.setLevel(logging.INFO)
-        f_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        f_handler.setFormatter(f_format)
+        log_file = LOGS_DIR / "app.log"
+        f_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+        f_handler.setFormatter(formatter)
         logger.addHandler(f_handler)
         
+        # Ensure immediate flush for file handler (often helpful in dev)
+        # f_handler.flush = lambda: super(logging.FileHandler, f_handler).flush()
+        
     return logger
+
+# Configure Root logger to capture third party logs if needed
+# But for now, just ensuring our named loggers work is usually enough.

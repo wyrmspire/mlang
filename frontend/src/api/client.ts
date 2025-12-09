@@ -32,4 +32,26 @@ export const api = {
         });
         return res.data.data;
     },
+
+    generateSession: async (dayOfWeek: number, sessionType: string, startPrice: number, date: string, timeframe: string) => {
+        const res = await axios.post<{ data: Candle[] }>(`${API_URL}/api/generate/session`, {
+            day_of_week: dayOfWeek,
+            session_type: sessionType,
+            start_price: startPrice,
+            date: date,
+            timeframe: timeframe
+        });
+        return res.data.data;
+    },
+
+    generateMultiDay: async (numDays: number, sessionType: string, startPrice: number, startDate: string, timeframe: string) => {
+        const res = await axios.post<{ data: Candle[] }>(`${API_URL}/api/generate/multi-day`, {
+            num_days: numDays,
+            session_type: sessionType,
+            initial_price: startPrice,
+            start_date: startDate,
+            timeframe: timeframe
+        });
+        return res.data.data;
+    }
 };
