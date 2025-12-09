@@ -6,3 +6,5 @@ scikit-learn
 pyarrow
 pydantic
 python-multipart
+yfinance
+torch
