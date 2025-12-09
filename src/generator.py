@@ -121,6 +121,7 @@ class PatternGenerator:
     def generate_multi_day(self, num_days: int, session_type: str = "RTH", initial_price: float = 5800.0, start_date: str = None):
         """
         Generate a multi-day synthetic path.
+        Generates 'num_days' of TRADING sessions (skips weekends/no-pattern days).
         """
         logger.info(f"Generating {num_days} days starting from {start_date or 'now'}")
         
@@ -136,19 +137,28 @@ class PatternGenerator:
         
         # Base Date
         if start_date:
+             # Look for start_date, but if it's weekend, we might start searching from there
              base_date = pd.to_datetime(start_date).tz_localize(LOCAL_TZ)
         else:
              base_date = pd.Timestamp.now(tz=LOCAL_TZ).normalize()
              
         full_history = []
+        days_generated = 0
+        search_offset = 0
+        max_lookahead = num_days * 3 # Prevent infinite loop
         
-        for day_idx in range(num_days):
-            # Target Date for this day
-            target_date = base_date + pd.Timedelta(days=day_idx)
+        while days_generated < num_days and search_offset < max_lookahead:
+            # Target Date
+            target_date = base_date + pd.Timedelta(days=search_offset)
+            search_offset += 1
+            
             day_of_week = target_date.dayofweek # 0=Mon
             
-            # 1. Generate Session for this day
+            # Simple Weekend Skip
+            if day_of_week >= 5:
+                continue
             
+            # 1. Generate Session for this day
             # Determine buckets
             valid_hours = [
                 m['hour_bucket'] 
@@ -158,15 +168,11 @@ class PatternGenerator:
             valid_hours = sorted(list(set(valid_hours)))
             
             if not valid_hours:
-                # e.g. Weekend? Skip logic or just increment date
-                # But typically we want trading days.
-                # Simple logic for now: if no RTH pattern for Sat/Sun, just skip to next loop
-                if day_of_week >= 5: 
-                    continue
-                logger.warning(f"No patterns for Day {day_idx} (DOW {day_of_week})")
+                logger.warning(f"No patterns for {target_date.date()} (DOW {day_of_week})")
                 continue
 
             day_bars = []
+            # Start time logic...
             start_hour_int = int(valid_hours[0].split(':')[0])
             current_time_cursor = target_date + pd.Timedelta(hours=start_hour_int)
             
@@ -182,26 +188,22 @@ class PatternGenerator:
                 counts = list(meta['cluster_counts'].values())
                 
                 # BIASING LOGIC
-                # Adjust 'counts' based on state similarity
                 weights = []
                 state_stats = meta.get('state_stats', {})
                 
                 for i, c_id in enumerate(clusters):
                     base_weight = counts[i]
-                    # Similarity multiplier
                     if state_stats:
-                        sim = self._calc_state_similarity(current_state, state_stats.get(str(c_id))) # json keys string
+                        sim = self._calc_state_similarity(current_state, state_stats.get(str(c_id)))
                         weights.append(base_weight * sim)
                     else:
                         weights.append(base_weight)
                 
-                # Normalize weights
                 total_w = sum(weights)
                 if total_w == 0: weights = [1]*len(weights)
                 
                 chosen_cluster = random.choices(clusters, weights=weights, k=1)[0]
                 
-                # Sample
                 candidates = self.patterns_df[
                     (self.patterns_df['session_type'] == session_type) &
                     (self.patterns_df['day_of_week'] == day_of_week) &
@@ -211,8 +213,6 @@ class PatternGenerator:
                 
                 if candidates.empty: continue
                 
-                # Advanced: filter candidates by state similarity too?
-                # For now just pick one.
                 sample = candidates.sample(1).iloc[0]
                 hist_start_time = sample['start_time']
                 
@@ -238,7 +238,7 @@ class PatternGenerator:
                         'low': scaled_low.iloc[i],
                         'close': scaled_close.iloc[i],
                         'volume': bars_df['volume'].iloc[i],
-                        'synthetic_day': day_idx
+                        'synthetic_day': days_generated # Use index 0..N-1
                     }
                     day_bars.append(bar)
                     full_history.append(bar)
@@ -248,28 +248,22 @@ class PatternGenerator:
                 
             # End of Day: Update State
             if day_bars:
-                # closes
+                days_generated += 1 # Success
+                
                 day_closes = [b['close'] for b in day_bars]
                 d_open = day_bars[0]['open']
                 d_close = day_bars[-1]['close']
                 d_high = max(b['high'] for b in day_bars)
                 d_low = min(b['low'] for b in day_bars)
                 
-                # Update features for NEXT day
-                prev_close = current_state.get('last_close', d_open) # rough fallback
+                prev_close = current_state.get('last_close', d_open)
                 
-                # Recalculate state (simplified)
                 current_state['prev_day_ret'] = (d_close / prev_close) - 1 if prev_close else 0
                 current_state['prev_day_range'] = (d_high - d_low) / prev_close if prev_close else 0.01
                 
-                # Volatility approx
                 rets = np.diff(day_closes) / day_closes[:-1]
                 current_state['vol_1m'] = np.std(rets) if len(rets) > 0 else 0.001
-                
-                # Trend decay + update
-                # new_trend = 0.9 * old_trend + 0.1 * current_ret
                 current_state['trend_3d'] = 0.9 * current_state['trend_3d'] + 0.1 * current_state['prev_day_ret']
-                
                 current_state['last_close'] = d_close
 
         return pd.DataFrame(full_history)
