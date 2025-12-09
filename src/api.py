@@ -326,6 +326,79 @@ def get_pattern_buckets():
 
 # --- YFinance Endpoints ---
 
+@app.get("/api/yfinance/candles/mock")
+def get_mock_candles(
+    bars: int = Query(500, description="Number of bars to generate"),
+    timeframe: str = Query("1m", description="Timeframe interval")
+):
+    """
+    Generate mock OHLC data for testing playback mode.
+    Creates realistic price movement with trends and volatility.
+    """
+    import random
+    
+    # Starting parameters
+    start_price = 5800.0
+    volatility = 2.0
+    trend = 0.05
+    
+    # Map timeframe to seconds
+    interval_map = {
+        '1m': 60,
+        '5m': 300,
+        '15m': 900,
+        '60m': 3600,
+        '1h': 3600
+    }
+    interval_seconds = interval_map.get(timeframe, 60)  # Default to 1m if unknown
+    
+    # Generate timestamp (starting from now - bars * interval)
+    end_time = int(datetime.now().timestamp())
+    start_time = end_time - (bars * interval_seconds)
+    
+    results = []
+    current_price = start_price
+    
+    for i in range(bars):
+        timestamp = start_time + (i * interval_seconds)
+        
+        # Generate OHLC
+        open_price = current_price
+        
+        # Random walk with slight trend
+        change_pct = random.gauss(trend / bars, volatility / 100)
+        close_price = open_price * (1 + change_pct)
+        
+        # High/Low with some intrabar movement
+        intrabar_range = abs(close_price - open_price) * random.uniform(1.2, 2.0)
+        high_price = max(open_price, close_price) + random.uniform(0, intrabar_range)
+        low_price = min(open_price, close_price) - random.uniform(0, intrabar_range)
+        
+        volume = random.uniform(1000, 5000)
+        
+        results.append({
+            "time": timestamp,
+            "open": round(open_price, 2),
+            "high": round(high_price, 2),
+            "low": round(low_price, 2),
+            "close": round(close_price, 2),
+            "volume": round(volume, 0)
+        })
+        
+        current_price = close_price
+    
+    # Update cache for playback analysis
+    # Convert to DataFrame with time as column (not index) for model inference
+    df_cache = pd.DataFrame(results)
+    df_cache['time'] = pd.to_datetime(df_cache['time'], unit='s')
+    
+    _last_yf_cache['symbol'] = 'MOCK'
+    _last_yf_cache['data'] = df_cache
+    _last_yf_cache['interval'] = timeframe
+    
+    logger.info(f"Generated {len(results)} mock candles")
+    return {"data": results, "symbol": "MOCK", "timeframe": timeframe}
+
 @app.get("/api/yfinance/candles")
 def get_yfinance_candles(
     symbol: str = Query("MES=F", description="Ticker symbol (e.g., MES=F, ES=F, AAPL)"),
@@ -411,10 +484,11 @@ def analyze_playback_candle(
     # See `_last_yf_cache` below.
 ): 
     # Need access to data
-    if _last_yf_cache['symbol'] != symbol:
+    # Allow mock data to be used for any symbol
+    if _last_yf_cache['symbol'] != symbol and _last_yf_cache['symbol'] != 'MOCK':
          # Warn or try to re-fetch?
          # If client just called get_yfinance_candles, it should be here.
-         raise HTTPException(status_code=400, detail="Data not cached. Call fetch first.")
+         raise HTTPException(status_code=400, detail=f"Data not cached for {symbol}. Call fetch first. Cached: {_last_yf_cache['symbol']}")
          
     df = _last_yf_cache['data']
     if df is None or df.empty:
@@ -437,4 +511,10 @@ _last_yf_cache = {
 
 # Update fetch to populate cache
 
+@app.get("/api/yfinance/models")
+def get_yfinance_models():
+    """Get list of available models for playback."""
+    from src.model_inference import get_available_models
+    models = get_available_models()
+    return {"models": models}
 
