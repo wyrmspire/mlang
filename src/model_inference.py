@@ -44,7 +44,7 @@ class ModelInference:
         
         try:
             self.model = TradeCNN().to(self.device)
-            self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+            self.model.load_state_dict(torch.load(model_path, map_location=self.device, weights_only=True))
             self.model.eval()
             logger.info(f"Model loaded successfully: {model_path}")
         except Exception as e:
