@@ -7,4 +7,3 @@ pyarrow
 pydantic
 python-multipart
 yfinance
-torch

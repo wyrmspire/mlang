@@ -8,12 +8,12 @@ import numpy as np
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import json
+import yfinance as yf
+from datetime import datetime, timedelta
 
 from src.config import ONE_MIN_PARQUET_DIR, PATTERNS_DIR, LOCAL_TZ
 from src.generator import get_generator
 from src.utils.logging_utils import get_logger
-from src.yfinance_loader import get_yfinance_loader
-from src.model_inference import ModelInference, get_available_models
 
 logger = get_logger("api")
 
@@ -324,146 +324,117 @@ def get_pattern_buckets():
         })
     return summary
 
+# --- YFinance Endpoints ---
 
-# ============================================================================
-# YFinance Endpoints for Historical Playback
-# ============================================================================
-
-class YFinanceFetchRequest(BaseModel):
-    symbol: str = "ES=F"
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
-    days_back: int = 7
-
-
-class TradeSignal(BaseModel):
-    direction: str
-    entry_price: float
-    sl_price: float
-    tp_price: float
-    confidence: float
-    entry_time: float
-
-
-@app.get("/api/yfinance/models")
-def get_models_list():
-    """Get list of available trained models."""
-    try:
-        models = get_available_models()
-        return {"models": models}
-    except Exception as e:
-        logger.error(f"Error fetching models: {e}")
-        return {"models": []}
-
-
-@app.post("/api/yfinance/fetch")
-def fetch_yfinance_data(req: YFinanceFetchRequest):
+@app.get("/api/yfinance/candles")
+def get_yfinance_candles(
+    symbol: str = Query("MES=F", description="Ticker symbol (e.g., MES=F, ES=F, AAPL)"),
+    days: int = Query(5, description="Number of days of historical 1m data to fetch"),
+    timeframe: str = Query("1m", description="Timeframe (1m, 5m, 15m, 60m, 1h, 1d)")
+):
     """
-    Fetch data from YFinance.
-    Returns 1-minute candles for the specified period.
+    Fetch 1-minute OHLC data from yfinance for a given symbol.
+    Default symbol is MES=F (Micro E-mini S&P 500).
     """
     try:
-        loader = get_yfinance_loader(req.symbol)
-        df = loader.fetch_data(
-            start_date=req.start_date,
-            end_date=req.end_date,
-            days_back=req.days_back
-        )
+        # Calculate date range (yahoo finance 1m only goes back ~7 days)
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+        
+        logger.info(f"Fetching {symbol} 1m data from {start_date} to {end_date}")
+        
+        # Fetch data
+        ticker = yf.Ticker(symbol)
+        # Map timeframe to yfinance interval if needed, or just use timeframe if valid
+        # Valid: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo
+        # We use '1m' or '5m' generally.
+        yf_interval = timeframe if timeframe in ['1m', '5m', '15m', '60m', '1h', '1d'] else "1m"
+        
+        df = ticker.history(start=start_date, end=end_date, interval=yf_interval)
         
         if df.empty:
-            return {
-                "success": False,
-                "message": "No data available for the specified period",
-                "data": [],
-                "dates": []
-            }
+            raise HTTPException(status_code=400, detail=f"No data returned for {symbol}. Check symbol spelling.")
+            
+        # Update Cache
+        _last_yf_cache['symbol'] = symbol
+        _last_yf_cache['data'] = df
+        _last_yf_cache['interval'] = yf_interval
+
         
-        # Get available dates
-        dates = loader.get_available_dates(df)
+        # No manual resampling needed if we fetched the correct interval
+        # But we might want to standardize columns
         
-        # Convert to list of candles
-        candles = []
-        for _, row in df.iterrows():
-            candles.append({
-                "time": int(row['time'].timestamp()),
-                "open": float(row['open']),
-                "high": float(row['high']),
-                "low": float(row['low']),
-                "close": float(row['close']),
-                "volume": float(row['volume'])
+        # Convert to candle format
+        results = []
+        for idx, row in df.iterrows():
+            results.append({
+                "time": int(idx.timestamp()),
+                "open": float(row['Open']),
+                "high": float(row['High']),
+                "low": float(row['Low']),
+                "close": float(row['Close']),
+                "volume": float(row.get('Volume', 0))
             })
         
-        return {
-            "success": True,
-            "data": candles,
-            "dates": dates,
-            "symbol": req.symbol
-        }
-        
+        logger.info(f"Returning {len(results)} candles for {symbol}")
+        return {"data": results, "symbol": symbol, "timeframe": timeframe}
+    
     except Exception as e:
-        logger.error(f"Error fetching YFinance data: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"YFinance fetch error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"YFinance error: {str(e)}")
 
+# --- Analysis Endpoint (Re-implemented) ---
+from src.model_inference import ModelInference
 
-class PlaybackRequest(BaseModel):
-    symbol: str = "ES=F"
-    date: str
-    model_name: str = "rejection_cnn_v1"
-    risk_amount: float = 300.0
-    days_back: int = 14  # History to load for analysis
+# Global inference cache
+_inference_engine = None
 
+def get_inference_engine(model_name: str):
+    global _inference_engine
+    if _inference_engine is None or _inference_engine.model_name != model_name:
+        _inference_engine = ModelInference(model_name)
+    return _inference_engine
 
 @app.post("/api/yfinance/playback/analyze")
 def analyze_playback_candle(
-    candle_index: int = Query(..., description="Current candle index in the data"),
-    model_name: str = Query("rejection_cnn_v1", description="Model to use for analysis"),
-    symbol: str = Query("ES=F", description="Symbol"),
-    date: str = Query(..., description="Date being analyzed"),
-    days_back: int = Query(14, description="Days of history to load")
-):
-    """
-    Analyze current market conditions and return trade signal if setup is found.
-    This simulates real-time analysis during playback.
-    """
-    try:
-        # Get the data from cache
-        loader = get_yfinance_loader(symbol)
+    candle_index: int = Query(..., description="Index in the client's data array"),
+    model_name: str = Query(..., description="Model to use"),
+    symbol: str = Query("MES=F"),
+    date: str = Query(...),
+    # We need the full context. Client sends index.
+    # But backend is stateless regarding the client's specific array? 
+    # NO. The Backend `get_yfinance_candles` fetches data but doesn't persist it for this session uniquely?
+    # Actually, `ModelInference.analyze` needs the DATAFRAME.
+    # We can't easily re-fetch yfinance data on every tick safely/quickly.
+    # SOLUTION: Client should probably send the last N candles? Or Backend caches the LAST fetched yfinance data?
+    # Let's use a simple global cache for the last fetched symbol/data in memory.
+    # See `_last_yf_cache` below.
+): 
+    # Need access to data
+    if _last_yf_cache['symbol'] != symbol:
+         # Warn or try to re-fetch?
+         # If client just called get_yfinance_candles, it should be here.
+         raise HTTPException(status_code=400, detail="Data not cached. Call fetch first.")
+         
+    df = _last_yf_cache['data']
+    if df is None or df.empty:
+        raise HTTPException(status_code=400, detail="No data cached.")
         
-        # Fetch data for the date (will use cache if available)
-        df = loader.fetch_data(days_back=days_back)  # Get enough history
-        
-        if df.empty:
-            return {"signal": None}
-        
-        # Filter to requested date and earlier (can only look back)
-        df = df[df['date'] <= date].copy()
-        
-        if len(df) <= candle_index:
-            return {"signal": None}
-        
-        # Initialize model inference
-        model_inf = ModelInference(model_name)
-        
-        # Check for trading setup at current position
-        setup = model_inf.check_for_setup(df, candle_index)
-        
-        if setup is None:
-            return {"signal": None}
-        
-        # Return signal with entry time
-        return {
-            "signal": {
-                "direction": setup["direction"],
-                "entry_price": setup["entry_price"],
-                "sl_price": setup["sl_price"],
-                "tp_price": setup["tp_price"],
-                "confidence": setup["confidence"],
-                "entry_time": int(df.iloc[candle_index]['time'].timestamp()),
-                "atr": setup.get("atr", 0),
-                "setup_type": setup.get("setup_type", "unknown")
-            }
-        }
-        
-    except Exception as e:
-        logger.error(f"Error analyzing playback: {e}")
-        return {"signal": None}
+    engine = get_inference_engine(model_name)
+    
+    # Run analysis
+    # Note: candle_index must align with the cached dataframe
+    result = engine.analyze(candle_index, df)
+    
+    return {"signal": result["signal"] if result else None}
+
+# Simple cache system for YFinance data to support playback analysis
+_last_yf_cache = {
+    "symbol": None,
+    "data": None, # DataFrame
+    "interval": None
+}
+
+# Update fetch to populate cache
+
+

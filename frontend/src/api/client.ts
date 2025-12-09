@@ -53,5 +53,12 @@ export const api = {
             timeframe: timeframe
         });
         return res.data.data;
+    },
+
+    getYFinanceCandles: async (symbol: string = "MES=F", days: number = 5, timeframe: string = "1m") => {
+        const res = await axios.get<{ data: Candle[], symbol: string, timeframe: string }>(`${API_URL}/api/yfinance/candles`, {
+            params: { symbol, days, timeframe }
+        });
+        return res.data.data;
     }
 };

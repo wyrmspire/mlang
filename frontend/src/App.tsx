@@ -151,10 +151,10 @@ const App: React.FC = () => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#1E1E1E', color: '#EEE' }}>
             {/* Top Menu Bar */}
-            <div style={{ 
-                display: 'flex', 
-                gap: '0', 
-                background: '#252526', 
+            <div style={{
+                display: 'flex',
+                gap: '0',
+                background: '#252526',
                 borderBottom: '1px solid #333',
                 padding: '0'
             }}>
@@ -194,7 +194,7 @@ const App: React.FC = () => {
 
             {/* Content */}
             {mode === 'yfinance' ? (
-                <YFinanceMode />
+                <YFinanceMode onBack={() => setMode('pattern')} />
             ) : (
                 <div style={{ display: 'flex', height: 'calc(100vh - 52px)' }}>
                     <SidebarControls

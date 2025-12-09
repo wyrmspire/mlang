@@ -1,46 +1,69 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { yfinanceApi, Trade } from '../api/yfinance';
+import { yfinanceApi, Trade, TradeSignal } from '../api/yfinance';
 import { Candle } from '../api/client';
 import { YFinanceChart } from './YFinanceChart';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react';
 
-export const YFinanceMode: React.FC = () => {
+interface YFinanceModeProps {
+    onBack: () => void;
+}
+
+export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
+    // Data settings
+    const [sourceInterval, setSourceInterval] = useState<'1m' | '5m'>('1m');
+    const [loadDays, setLoadDays] = useState<number>(5);
+
     // Data state
-    const [allData, setAllData] = useState<Candle[]>([]);
-    const [dates, setDates] = useState<string[]>([]);
-    const [selectedDate, setSelectedDate] = useState<string>('');
-    const [symbol, setSymbol] = useState<string>('ES=F');
-    
+    const [allData, setAllData] = useState<Candle[]>([]); // Source candles (1m or 5m)
+    const [dates, setDates] = useState<string[]>([]); // Not strictly used for yfinance fetch? Date range driven. 
+    // Actually our fetch returns "last N days". The "dates" array in API response is convenient if we want to jump.
+    const [symbol, setSymbol] = useState<string>('MES=F');
+
     // Playback state
     const [currentIndex, setCurrentIndex] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
-    const [playbackSpeed, setPlaybackSpeed] = useState<number>(100); // ms per candle
-    const [visibleData, setVisibleData] = useState<Candle[]>([]);
-    
+    const [playbackSpeed, setPlaybackSpeed] = useState<number>(200);
+    const [displayTimeframe, setDisplayTimeframe] = useState<number>(15); // Minutes
+
+    // Chart Data (Aggregated)
+    const [chartCandles, setChartCandles] = useState<Candle[]>([]);
+    const [currentPrice, setCurrentPrice] = useState<number>(0);
+
     // Model & Trading state
     const [availableModels, setAvailableModels] = useState<string[]>([]);
-    const [selectedModel, setSelectedModel] = useState<string>('rejection_cnn_v1');
+    const [selectedModel, setSelectedModel] = useState<string>('CNN_Predictive_5m');
     const [riskAmount, setRiskAmount] = useState<number>(300);
     const [trades, setTrades] = useState<Trade[]>([]);
     const [totalPnL, setTotalPnL] = useState<number>(0);
-    
+    const [unrealizedPnL, setUnrealizedPnL] = useState<number>(0);
+
     // UI state
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    
+
     // Refs
     const playbackIntervalRef = useRef<number | null>(null);
 
-    // Load models on mount
+    // Initial Load
     useEffect(() => {
         loadModels();
-    }, []);
+        // Adjust defaults based on source interval
+        if (sourceInterval === '1m') {
+            setLoadDays(5);
+            setDisplayTimeframe(15);
+        } else {
+            setLoadDays(30);
+            setDisplayTimeframe(60);
+        }
+    }, [sourceInterval]);
 
     const loadModels = async () => {
         try {
             const models = await yfinanceApi.getAvailableModels();
             setAvailableModels(models);
             if (models.length > 0 && !models.includes(selectedModel)) {
-                setSelectedModel(models[0]);
+                // Prefer predictive
+                const pred = models.find(m => m.includes('Predictive'));
+                setSelectedModel(pred || models[0]);
             }
         } catch (e) {
             console.error('Error loading models:', e);
@@ -50,18 +73,13 @@ export const YFinanceMode: React.FC = () => {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const result = await yfinanceApi.fetchData(symbol, 14);
+            // Using loadDays and sourceInterval
+            const result = await yfinanceApi.fetchData(symbol, loadDays, sourceInterval);
+
             if (result.success) {
                 setAllData(result.data);
-                setDates(result.dates);
-                if (result.dates.length > 0 && !selectedDate) {
-                    setSelectedDate(result.dates[0]);
-                }
-                // Reset playback
-                setCurrentIndex(0);
-                setVisibleData([]);
-                setTrades([]);
-                setTotalPnL(0);
+                // Reset everything
+                resetPlayback(result.data);
             } else {
                 alert(result.message || 'Failed to load data');
             }
@@ -73,26 +91,31 @@ export const YFinanceMode: React.FC = () => {
         }
     };
 
-    // Filter data by date
-    const dateData = React.useMemo(() => {
-        if (!selectedDate || allData.length === 0) return [];
-        return allData.filter(c => {
-            const date = new Date(c.time * 1000).toISOString().split('T')[0];
-            return date === selectedDate;
-        });
-    }, [allData, selectedDate]);
+    const resetPlayback = (data: Candle[] = allData) => {
+        if (data.length === 0) return;
 
-    // Playback control
+        // Start from beginning of loaded buffer? Or 200 bars in?
+        // Let's start a bit in so we have history for the chart/model
+        const startIdx = Math.min(200, data.length - 1);
+        setCurrentIndex(startIdx);
+
+        setIsPlaying(false);
+        setChartCandles([]);
+        setTrades([]);
+        setTotalPnL(0);
+        setUnrealizedPnL(0);
+    };
+
+    // Playback Loop
     useEffect(() => {
-        if (isPlaying && dateData.length > 0 && currentIndex < dateData.length) {
+        if (isPlaying && allData.length > 0 && currentIndex < allData.length) {
             playbackIntervalRef.current = window.setInterval(() => {
                 setCurrentIndex(prev => {
-                    const next = prev + 1;
-                    if (next >= dateData.length) {
+                    if (prev + 1 >= allData.length) {
                         setIsPlaying(false);
                         return prev;
                     }
-                    return next;
+                    return prev + 1;
                 });
             }, playbackSpeed);
         } else {
@@ -101,318 +124,274 @@ export const YFinanceMode: React.FC = () => {
                 playbackIntervalRef.current = null;
             }
         }
-
         return () => {
-            if (playbackIntervalRef.current !== null) {
-                clearInterval(playbackIntervalRef.current);
-            }
+            if (playbackIntervalRef.current !== null) clearInterval(playbackIntervalRef.current);
         };
-    }, [isPlaying, currentIndex, dateData.length, playbackSpeed]);
+    }, [isPlaying, currentIndex, allData.length, playbackSpeed]);
 
-    // Update visible data as playback progresses
+    // Update Chart & Logic on Update
     useEffect(() => {
-        if (dateData.length > 0 && currentIndex >= 0) {
-            setVisibleData(dateData.slice(0, currentIndex + 1));
+        if (allData.length === 0 || currentIndex >= allData.length) return;
+
+        const tick = allData[currentIndex];
+        setCurrentPrice(tick.close);
+
+        // 1. Accumulate Candle
+        setChartCandles(prev => {
+            if (prev.length === 0) return [tick];
+
+            const lastCandle = prev[prev.length - 1];
+            const tfSeconds = displayTimeframe * 60;
+            // Align to timeframe boundary
+            const lastStart = Math.floor(lastCandle.time / tfSeconds) * tfSeconds;
+
+            // Check if tick belongs to the CURRENT candle or starts a NEW one
+            // Note: tick.time is the OPEN time of the source candle.
+            // If source is 5m, tick.time=10:00 covers 10:00-10:05.
+            // If display is 15m, 10:00 belongs to 10:00-10:15 candle.
+
+            const tickTime = tick.time;
+
+            // Time check: Is tick within [lastStart, lastStart + tfSeconds)?
+            if (tickTime < lastStart + tfSeconds) {
+                // Update existing
+                const updated = {
+                    ...lastCandle,
+                    high: Math.max(lastCandle.high, tick.high),
+                    low: Math.min(lastCandle.low, tick.low),
+                    close: tick.close,
+                    volume: lastCandle.volume + tick.volume
+                };
+                return [...prev.slice(0, -1), updated];
+            } else {
+                // New Candle
+                // We should probably start it relative to the 'tick' time aligned?
+                // Or just push the tick?
+                // If we gap (e.g. overnight), the accumulation logic still holds: valid new candle.
+                return [...prev, tick];
+            }
+        });
+
+        // 2. Manage Trades
+        updateTrades(tick);
+
+        // 3. Check Signals
+        if (isPlaying) {
+            checkSignal(currentIndex);
         }
-    }, [currentIndex, dateData]);
 
-    // Check for trade signals as new candles appear
-    useEffect(() => {
-        // Need at least 20 candles for analysis (matches model WINDOW_SIZE)
-        const MIN_CANDLES_FOR_ANALYSIS = 20;
-        
-        if (!isPlaying || currentIndex < MIN_CANDLES_FOR_ANALYSIS) return;
+    }, [currentIndex]); // Only on index change
 
-        const checkForSignal = async () => {
-            try {
-                const signal = await yfinanceApi.analyzeCandle(
-                    currentIndex,
-                    selectedModel,
-                    symbol,
-                    selectedDate
-                );
+    // Trade Management
+    const updateTrades = (tick: Candle) => {
+        setTrades(prev => {
+            let pnlRealized = 0;
+            const nextTrades = prev.map(t => {
+                // Open Positions
+                if (t.status === 'open') {
+                    let hitSL = false, hitTP = false;
+                    // Check SL/TP
+                    if (t.direction === 'LONG') {
+                        if (tick.low <= t.sl_price) hitSL = true;
+                        else if (tick.high >= t.tp_price) hitTP = true;
+                    } else {
+                        if (tick.high >= t.sl_price) hitSL = true;
+                        else if (tick.low <= t.tp_price) hitTP = true;
+                    }
 
-                if (signal) {
-                    // Create new trade
-                    const newTrade: Trade = {
-                        id: `trade_${Date.now()}_${Math.random()}`,
-                        direction: signal.direction,
-                        entry_price: signal.entry_price,
-                        entry_time: signal.entry_time,
-                        sl_price: signal.sl_price,
-                        tp_price: signal.tp_price,
-                        status: 'open',
-                        risk_amount: riskAmount
-                    };
-                    setTrades(prev => [...prev, newTrade]);
-                }
-            } catch (e) {
-                console.error('Error checking for signal:', e);
-            }
-        };
+                    if (hitSL) {
+                        const loss = -Math.abs(t.risk_amount);
+                        pnlRealized += loss;
+                        return { ...t, status: 'closed', pnl: loss, exit_price: t.sl_price, exit_time: tick.time } as Trade;
+                    }
+                    if (hitTP) {
+                        // Calculate Reward based on Distances
+                        const risk = Math.abs(t.entry_price - t.sl_price);
+                        const reward = Math.abs(t.entry_price - t.tp_price);
+                        const rMultiple = reward / (risk || 1);
+                        const win = t.risk_amount * rMultiple;
 
-        checkForSignal();
-    }, [currentIndex, isPlaying]);
-
-    // Update open trades with current price
-    useEffect(() => {
-        if (visibleData.length === 0) return;
-
-        const currentCandle = visibleData[visibleData.length - 1];
-        const currentTime = currentCandle.time;
-
-        setTrades(prevTrades => {
-            let pnlChange = 0;
-            const updatedTrades = prevTrades.map(trade => {
-                if (trade.status !== 'open') return trade;
-
-                // Check if SL or TP hit
-                const isLong = trade.direction === 'LONG';
-                
-                let hitSL = false;
-                let hitTP = false;
-
-                if (isLong) {
-                    hitSL = currentCandle.low <= trade.sl_price;
-                    hitTP = currentCandle.high >= trade.tp_price;
-                } else {
-                    hitSL = currentCandle.high >= trade.sl_price;
-                    hitTP = currentCandle.low <= trade.tp_price;
+                        pnlRealized += win;
+                        return { ...t, status: 'closed', pnl: win, exit_price: t.tp_price, exit_time: tick.time } as Trade;
+                    }
                 }
 
-                if (hitSL) {
-                    // Stop loss hit - lose risk amount
-                    const pnl = -trade.risk_amount;
-                    pnlChange += pnl;
-                    return {
-                        ...trade,
-                        exit_price: trade.sl_price,
-                        exit_time: currentTime,
-                        pnl: pnl,
-                        status: 'closed' as const
-                    };
-                } else if (hitTP) {
-                    // Take profit hit - win risk amount (1:1 R:R)
-                    const pnl = trade.risk_amount;
-                    pnlChange += pnl;
-                    return {
-                        ...trade,
-                        exit_price: trade.tp_price,
-                        exit_time: currentTime,
-                        pnl: pnl,
-                        status: 'closed' as const
-                    };
+                // Pending Orders
+                if (t.status === 'pending') {
+                    // Start time check?
+                    if (tick.time < t.entry_time) return t;
+
+                    // Expiry check
+                    // t.exit_time is used as expiry? No, we don't have explicit expiry field in Trade type yet?
+                    // We can add it or just assume infinite/manual cancel.
+                    // Implementation plan said "Validity: 15m".
+                    // Let's rely on manual check or add logic if we had expiry.
+                    // Hardcode: 3 bars of source?
+                    // For now, infinite validity until filled.
+
+                    let filled = false;
+                    if (t.direction === 'SELL' && tick.high >= t.entry_price) filled = true;
+                    else if (t.direction === 'BUY' && tick.low <= t.entry_price) filled = true;
+
+                    if (filled) {
+                        return { ...t, status: 'open' } as Trade;
+                    }
                 }
 
-                return trade;
+                return t;
             });
 
-            if (pnlChange !== 0) {
-                setTotalPnL(prev => prev + pnlChange);
-            }
+            if (pnlRealized !== 0) setTotalPnL(s => s + pnlRealized);
 
-            return updatedTrades;
+            // Unrealized
+            let float = 0;
+            nextTrades.forEach(t => {
+                if (t.status === 'open') {
+                    const dist = t.direction === 'LONG' ? tick.close - t.entry_price : t.entry_price - tick.close;
+                    const risk = Math.abs(t.entry_price - t.sl_price);
+                    const size = t.risk_amount / (risk || 1);
+                    float += dist * size;
+                }
+            });
+            setUnrealizedPnL(float);
+
+            return nextTrades;
         });
-    }, [visibleData]);
-
-    const handlePlayPause = () => {
-        if (dateData.length === 0) {
-            alert('Please load data first');
-            return;
-        }
-        setIsPlaying(!isPlaying);
     };
 
-    const handleReset = () => {
-        setIsPlaying(false);
-        setCurrentIndex(0);
-        setVisibleData([]);
-        setTrades([]);
-        setTotalPnL(0);
+    const checkSignal = async (idx: number) => {
+        try {
+            // current timestamp
+            const dateStr = new Date(allData[idx].time * 1000).toISOString().split('T')[0];
+
+            const resp = await yfinanceApi.analyzeCandle(idx, selectedModel, symbol, dateStr);
+            if (resp && resp.signal) {
+                const s = resp.signal;
+
+                // OCO Logic
+                if (s.type === 'OCO_LIMIT') {
+                    // Two pending orders
+                    const sell: Trade = {
+                        id: `s_${idx}`,
+                        direction: 'SELL',
+                        entry_price: s.sell_limit || 0,
+                        sl_price: (s.sell_limit || 0) + (s.sl_dist || 0),
+                        tp_price: s.current_price || 0, // Target Reversion to Mean
+                        entry_time: allData[idx].time,
+                        status: 'pending',
+                        risk_amount: riskAmount
+                    };
+                    const buy: Trade = {
+                        id: `b_${idx}`,
+                        direction: 'BUY',
+                        entry_price: s.buy_limit || 0,
+                        sl_price: (s.buy_limit || 0) - (s.sl_dist || 0),
+                        tp_price: s.current_price || 0,
+                        entry_time: allData[idx].time,
+                        status: 'pending',
+                        risk_amount: riskAmount
+                    };
+
+                    // Avoid duplicates?
+                    // Simple check: don't add if we just added same ID
+                    setTrades(prev => {
+                        if (prev.some(p => p.id === `s_${idx}`)) return prev;
+                        return [...prev, sell, buy];
+                    });
+                }
+            }
+        } catch (e) { console.error(e); }
     };
 
     const openTrades = trades.filter(t => t.status === 'open');
-    const closedTrades = trades.filter(t => t.status === 'closed');
-    const winningTrades = closedTrades.filter(t => (t.pnl || 0) > 0);
-    const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length * 100) : 0;
+    const pendingTrades = trades.filter(t => t.status === 'pending');
 
     return (
         <div style={{ display: 'flex', height: '100vh', background: '#1E1E1E', color: '#EEE' }}>
             {/* Sidebar */}
-            <div style={{ width: '280px', background: '#252526', padding: '15px', borderRight: '1px solid #333', overflowY: 'auto' }}>
-                <h2 style={{ margin: '0 0 20px 0', fontSize: '18px' }}>YFinance Playback</h2>
-
-                {/* Symbol & Load */}
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px' }}>Symbol</label>
-                    <input
-                        type="text"
-                        value={symbol}
-                        onChange={e => setSymbol(e.target.value)}
-                        style={{ width: '100%', padding: '8px', background: '#333', color: '#EEE', border: '1px solid #555', borderRadius: '4px' }}
-                    />
-                </div>
-
-                <button
-                    onClick={loadData}
-                    disabled={isLoading}
-                    style={{
-                        width: '100%',
-                        padding: '10px',
-                        background: isLoading ? '#555' : '#0E639C',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: isLoading ? 'wait' : 'pointer',
-                        marginBottom: '15px'
-                    }}
-                >
-                    {isLoading ? 'Loading...' : 'Load Data'}
+            <div style={{ width: '300px', background: '#252526', padding: '15px', borderRight: '1px solid #333', overflowY: 'auto' }}>
+                <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', marginBottom: '20px', background: 'transparent', color: '#aaa', border: 'none', cursor: 'pointer' }}>
+                    <ArrowLeft size={16} /> Back
                 </button>
 
-                {dates.length > 0 && (
-                    <div style={{ marginBottom: '15px' }}>
-                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px' }}>Date</label>
-                        <select
-                            value={selectedDate}
-                            onChange={e => {
-                                setSelectedDate(e.target.value);
-                                handleReset();
-                            }}
-                            style={{ width: '100%', padding: '8px', background: '#333', color: '#EEE', border: '1px solid #555', borderRadius: '4px' }}
-                        >
-                            {dates.map(d => <option key={d} value={d}>{d}</option>)}
-                        </select>
+                <h2 style={{ margin: '0 0 20px 0' }}>True Replay</h2>
+
+                <div className="control-group" style={{ marginBottom: '20px' }}>
+                    <label>Symbol</label>
+                    <input value={symbol} onChange={e => setSymbol(e.target.value)} style={{ width: '100%', padding: '5px' }} />
+
+                    <label style={{ marginTop: '10px', display: 'block' }}>Source Granularity</label>
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                        <button
+                            onClick={() => setSourceInterval('1m')}
+                            style={{ flex: 1, padding: '5px', background: sourceInterval === '1m' ? '#007acc' : '#444', border: 'none', color: 'white' }}>
+                            1 Minute
+                        </button>
+                        <button
+                            onClick={() => setSourceInterval('5m')}
+                            style={{ flex: 1, padding: '5px', background: sourceInterval === '5m' ? '#007acc' : '#444', border: 'none', color: 'white' }}>
+                            5 Minute
+                        </button>
                     </div>
-                )}
 
-                <hr style={{ borderColor: '#444', margin: '15px 0' }} />
+                    <label style={{ marginTop: '10px', display: 'block' }}>Days to Load</label>
+                    <input type="number" value={loadDays} onChange={e => setLoadDays(Number(e.target.value))} min={1} max={60} style={{ width: '100%', padding: '5px' }} />
+                    <div style={{ fontSize: '10px', color: '#777' }}>Max: ~7d (1m), ~60d (5m)</div>
 
-                {/* Model Selection */}
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px' }}>Model</label>
-                    <select
-                        value={selectedModel}
-                        onChange={e => setSelectedModel(e.target.value)}
-                        style={{ width: '100%', padding: '8px', background: '#333', color: '#EEE', border: '1px solid #555', borderRadius: '4px' }}
-                    >
-                        {availableModels.map(m => <option key={m} value={m}>{m}</option>)}
+                    <button onClick={loadData} disabled={isLoading} style={{ width: '100%', marginTop: '5px', padding: '8px', background: '#007acc', color: 'white', border: 'none' }}>
+                        {isLoading ? 'Loading...' : 'Load Data'}
+                    </button>
+                </div>
+
+                <div className="control-group" style={{ marginBottom: '20px' }}>
+                    <label>Model</label>
+                    <select value={selectedModel} onChange={e => setSelectedModel(e.target.value)} style={{ width: '100%', padding: '5px' }}>
+                        {availableModels.map(m => <option key={m}>{m}</option>)}
                     </select>
                 </div>
 
-                {/* Risk Amount */}
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px' }}>Risk per Trade ($)</label>
-                    <input
-                        type="number"
-                        value={riskAmount}
-                        onChange={e => setRiskAmount(Number(e.target.value))}
-                        min={50}
-                        max={5000}
-                        step={50}
-                        style={{ width: '100%', padding: '8px', background: '#333', color: '#EEE', border: '1px solid #555', borderRadius: '4px' }}
-                    />
+                <div className="control-group" style={{ marginBottom: '20px' }}>
+                    <label>Chart Timeframe</label>
+                    <select value={displayTimeframe} onChange={e => {
+                        setDisplayTimeframe(Number(e.target.value));
+                        setChartCandles([]);
+                    }} style={{ width: '100%', padding: '5px' }}>
+                        <option value={5} disabled={sourceInterval === '5m'}>5 Minutes</option>
+                        <option value={15}>15 Minutes</option>
+                        <option value={60}>1 Hour</option>
+                    </select>
                 </div>
 
-                {/* Playback Speed */}
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px' }}>Speed (ms/candle)</label>
-                    <input
-                        type="range"
-                        value={playbackSpeed}
-                        onChange={e => setPlaybackSpeed(Number(e.target.value))}
-                        min={10}
-                        max={1000}
-                        step={10}
-                        style={{ width: '100%' }}
-                    />
-                    <div style={{ fontSize: '11px', color: '#999', textAlign: 'center' }}>{playbackSpeed}ms</div>
+                {/* Stats */}
+                <div style={{ background: '#333', padding: '10px', borderRadius: '4px' }}>
+                    <div>Realized PnL: <strong style={{ color: totalPnL >= 0 ? '#4caf50' : '#f44336' }}>${totalPnL.toFixed(2)}</strong></div>
+                    <div>Floating PnL: <strong style={{ color: unrealizedPnL >= 0 ? '#4caf50' : '#f44336' }}>${unrealizedPnL.toFixed(2)}</strong></div>
+                    <div>Open: {openTrades.length} | Pending: {pendingTrades.length}</div>
                 </div>
-
-                <hr style={{ borderColor: '#444', margin: '15px 0' }} />
-
-                {/* Statistics */}
-                <div style={{ marginBottom: '15px' }}>
-                    <h3 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Statistics</h3>
-                    <div style={{ fontSize: '12px', lineHeight: '1.6' }}>
-                        <div>Total P&L: <span style={{ color: totalPnL >= 0 ? '#4caf50' : '#ef5350', fontWeight: 'bold' }}>${totalPnL.toFixed(2)}</span></div>
-                        <div>Open Trades: {openTrades.length}</div>
-                        <div>Closed Trades: {closedTrades.length}</div>
-                        <div>Win Rate: {winRate.toFixed(1)}%</div>
-                        <div>Progress: {currentIndex} / {dateData.length}</div>
-                    </div>
-                </div>
-
-                {/* Open Trades */}
-                {openTrades.length > 0 && (
-                    <div style={{ marginBottom: '15px' }}>
-                        <h3 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Open Positions</h3>
-                        {openTrades.map(trade => (
-                            <div key={trade.id} style={{ background: '#333', padding: '8px', marginBottom: '5px', borderRadius: '4px', fontSize: '11px' }}>
-                                <div style={{ fontWeight: 'bold' }}>{trade.direction}</div>
-                                <div>Entry: {trade.entry_price.toFixed(2)}</div>
-                                <div>SL: {trade.sl_price.toFixed(2)} | TP: {trade.tp_price.toFixed(2)}</div>
-                            </div>
-                        ))}
-                    </div>
-                )}
             </div>
 
-            {/* Main Content */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '10px' }}>
-                {/* Controls */}
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center', background: '#252526', padding: '10px', borderRadius: '4px' }}>
-                    <button
-                        onClick={handlePlayPause}
-                        disabled={dateData.length === 0}
-                        style={{
-                            padding: '10px 20px',
-                            background: '#0E639C',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: dateData.length === 0 ? 'not-allowed' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px'
-                        }}
-                    >
-                        {isPlaying ? <><Pause size={16} /> Pause</> : <><Play size={16} /> Play</>}
+            {/* Main Chart */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ padding: '10px', display: 'flex', gap: '10px', alignItems: 'center', background: '#333' }}>
+                    <button onClick={() => setIsPlaying(!isPlaying)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 15px', cursor: 'pointer' }}>
+                        {isPlaying ? <Pause size={16} /> : <Play size={16} />} {isPlaying ? 'Pause' : 'Play'}
                     </button>
-
-                    <button
-                        onClick={handleReset}
-                        style={{
-                            padding: '10px 20px',
-                            background: '#333',
-                            color: '#EEE',
-                            border: '1px solid #555',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px'
-                        }}
-                    >
+                    <button onClick={() => resetPlayback()} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 15px', cursor: 'pointer' }}>
                         <RotateCcw size={16} /> Reset
                     </button>
-
-                    <div style={{ flex: 1 }} />
-
-                    <div style={{ fontSize: '14px', color: '#999' }}>
-                        {selectedDate && `${selectedDate} | ${currentIndex} / ${dateData.length} candles`}
-                    </div>
+                    <input type="range" min="10" max="1000" step="10" value={playbackSpeed} onChange={e => setPlaybackSpeed(Number(e.target.value))} />
+                    <span>{playbackSpeed}ms</span>
+                    <span style={{ marginLeft: 'auto' }}>{allData[currentIndex]?.time ? new Date(allData[currentIndex].time * 1000).toLocaleString() : '--'}</span>
                 </div>
 
-                {/* Chart */}
-                <div style={{ flex: 1, border: '1px solid #444', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ flex: 1 }}>
                     <YFinanceChart
-                        data={visibleData}
+                        data={chartCandles}
                         trades={trades}
-                        currentPrice={visibleData.length > 0 ? visibleData[visibleData.length - 1].close : 0}
+                        currentPrice={currentPrice}
                     />
                 </div>
             </div>
         </div>
     );
-};
+}

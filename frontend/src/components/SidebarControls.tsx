@@ -13,6 +13,7 @@ interface SidebarControlsProps {
     sessionType: string;
     setSessionType: (s: string) => void;
     onClearSynthetic: () => void;
+    onOpenYFinance?: () => void;
 
     // Multi-Day Props
     isMultiDay: boolean;
@@ -30,6 +31,7 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
     dayOfWeek, setDayOfWeek,
     sessionType, setSessionType,
     onClearSynthetic,
+    onOpenYFinance,
     isMultiDay, setIsMultiDay,
     numDays, setNumDays,
     startDate, setStartDate
@@ -162,6 +164,21 @@ export const SidebarControls: React.FC<SidebarControlsProps> = ({
             >
                 Clear Synthetic
             </button>
+
+            {onOpenYFinance && (
+                <button
+                    onClick={onOpenYFinance}
+                    style={{
+                        width: '100%', padding: '10px',
+                        background: '#D4A500',
+                        color: '#000', border: 'none', cursor: 'pointer',
+                        marginTop: '10px',
+                        fontWeight: 'bold'
+                    }}
+                >
+                    📈 YFinance Data
+                </button>
+            )}
         </div>
     );
 };

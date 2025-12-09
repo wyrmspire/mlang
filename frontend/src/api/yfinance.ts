@@ -4,14 +4,22 @@ import { Candle } from './client';
 const API_URL = 'http://localhost:8000';
 
 export interface TradeSignal {
+    type?: string; // 'OCO_LIMIT' | 'MARKET'
     direction: string;
     entry_price: number;
-    sl_price: number;
-    tp_price: number;
+    sl_price: number; // For direct market orders
+    tp_price: number; // For direct market orders
     confidence: number;
     entry_time: number;
     atr?: number;
     setup_type?: string;
+
+    // OCO Fields
+    sell_limit?: number;
+    buy_limit?: number;
+    sl_dist?: number;
+    limit_dist?: number;
+    current_price?: number;
 }
 
 export interface YFinanceData {
@@ -32,15 +40,18 @@ export interface Trade {
     exit_price?: number;
     exit_time?: number;
     pnl?: number;
-    status: 'open' | 'closed';
+    status: 'open' | 'closed' | 'pending';
     risk_amount: number;
 }
 
 export const yfinanceApi = {
-    fetchData: async (symbol: string = 'ES=F', daysBack: number = 7): Promise<YFinanceData> => {
-        const res = await axios.post<YFinanceData>(`${API_URL}/api/yfinance/fetch`, {
-            symbol,
-            days_back: daysBack
+    fetchData: async (symbol: string = 'ES=F', daysBack: number = 7, interval: string = '1m'): Promise<YFinanceData> => {
+        const res = await axios.get<YFinanceData>(`${API_URL}/api/yfinance/candles`, {
+            params: {
+                symbol,
+                days: daysBack,
+                timeframe: interval
+            }
         });
         return res.data;
     },
@@ -54,8 +65,9 @@ export const yfinanceApi = {
         candleIndex: number,
         modelName: string,
         symbol: string,
-        date: string
-    ): Promise<TradeSignal | null> => {
+        date: string,
+        daysBack?: number
+    ): Promise<{ signal: TradeSignal | null }> => {
         const res = await axios.post<{ signal: TradeSignal | null }>(
             `${API_URL}/api/yfinance/playback/analyze`,
             null,
@@ -68,6 +80,9 @@ export const yfinanceApi = {
                 }
             }
         );
-        return res.data.signal;
+        // Return matching the structure expected by YFinanceMode (wrapper object)
+        // Or change YFinanceMode. currently YFinanceMode expects `resp.signal`.
+        // If I return `res.data`, it contains `signal`.
+        return res.data;
     }
 };

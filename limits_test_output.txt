@@ -1,0 +1,130 @@
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=29d) (Yahoo error = "1m data not available for startTime=1762767057 and endTime=1765272657. Only 8 days worth of 1m granularity data are allowed to be fetched per request.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=30d) (Yahoo error = "1m data not available for startTime=1762680657 and endTime=1765272657. Only 8 days worth of 1m granularity data are allowed to be fetched per request.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=61d) (Yahoo error = "5m data not available for startTime=1760002259 and endTime=1765272659. The requested range must be within the last 60 days.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=89d) (Yahoo error = "5m data not available for startTime=1757583060 and endTime=1765272660. The requested range must be within the last 60 days.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=90d) (Yahoo error = "5m data not available for startTime=1757496660 and endTime=1765272660. The requested range must be within the last 60 days.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=61d) (Yahoo error = "15m data not available for startTime=1760002261 and endTime=1765272661. The requested range must be within the last 60 days.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=89d) (Yahoo error = "15m data not available for startTime=1757583062 and endTime=1765272662. The requested range must be within the last 60 days.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=90d) (Yahoo error = "15m data not available for startTime=1757496662 and endTime=1765272662. The requested range must be within the last 60 days.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=61d) (Yahoo error = "15m data not available for startTime=1760002263 and endTime=1765272663. The requested range must be within the last 60 days.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=89d) (Yahoo error = "15m data not available for startTime=1757583064 and endTime=1765272664. The requested range must be within the last 60 days.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=90d) (Yahoo error = "15m data not available for startTime=1757496664 and endTime=1765272664. The requested range must be within the last 60 days.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+
+1 Failed download:
+['MES=F']: YFPricesMissingError('possibly delisted; no price data found  (period=731d) (Yahoo error = "1h data not available for startTime=1702114266 and endTime=1765272666. The requested range must be within the last 730 days.")')
+C:\mlang\src\scripts\test_yfinance_limits.py:32: FutureWarning: YF.download() has changed argument auto_adjust default to True
+  df = yf.download(ticker, period=period, interval=interval, progress=False, ignore_tz=True)
+Testing YFinance API Limits for MES=F...
+
+Interval   | Period     | Result     | Rows       | Start Date               
+--------------------------------------------------------------------------------
+1m         | 5d         | OK         | 4360       | 2025-12-04 00:09:00      
+1m         | 7d         | OK         | 7100       | 2025-12-02 00:09:00      
+1m         | 8d         | OK         | 8479       | 2025-12-01 00:00:00      
+1m         | 29d        | EMPTY      | 0          | N/A                      
+1m         | 30d        | EMPTY      | 0          | N/A                      
+5m         | 55d        | OK         | 12120      | 2025-10-06 00:00:00      
+5m         | 59d        | OK         | 12944      | 2025-10-01 00:05:00      
+5m         | 60d        | OK         | 13219      | 2025-09-30 00:05:00      
+5m         | 61d        | EMPTY      | 0          | N/A                      
+5m         | 89d        | EMPTY      | 0          | N/A                      
+5m         | 90d        | EMPTY      | 0          | N/A                      
+15m        | 55d        | OK         | 4063       | 2025-10-06 00:00:00      
+15m        | 59d        | OK         | 4339       | 2025-10-01 00:00:00      
+15m        | 60d        | OK         | 4431       | 2025-09-30 00:00:00      
+15m        | 61d        | EMPTY      | 0          | N/A                      
+15m        | 89d        | EMPTY      | 0          | N/A                      
+15m        | 90d        | EMPTY      | 0          | N/A                      
+30m        | 55d        | OK         | 2032       | 2025-10-06 00:00:00      
+30m        | 59d        | OK         | 2170       | 2025-10-01 00:00:00      
+30m        | 60d        | OK         | 2216       | 2025-09-30 00:00:00      
+30m        | 61d        | EMPTY      | 0          | N/A                      
+30m        | 89d        | EMPTY      | 0          | N/A                      
+30m        | 90d        | EMPTY      | 0          | N/A                      
+1h         | 89d        | OK         | 1654       | 2025-08-26 00:00:00      
+1h         | 90d        | OK         | 1677       | 2025-08-25 00:00:00      
+1h         | 1y         | OK         | 5743       | 2024-12-09 04:00:00      
+1h         | 729d       | OK         | 13722      | 2023-07-23 18:00:00      
+1h         | 730d       | OK         | 13739      | 2023-07-21 00:00:00      
+1h         | 731d       | EMPTY      | 0          | N/A                      
+1h         | 2y         | OK         | 11461      | 2023-12-10 18:00:00      
