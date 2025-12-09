@@ -137,24 +137,30 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
         setCurrentPrice(tick.close);
 
         // 1. Accumulate Candle
+        let isNewCandle = false;
         setChartCandles(prev => {
-            if (prev.length === 0) return [tick];
+            if (prev.length === 0) {
+                isNewCandle = true;
+                // Start with first tick aligned to timeframe boundary
+                const tfSeconds = displayTimeframe * 60;
+                const alignedTime = Math.floor(tick.time / tfSeconds) * tfSeconds;
+                return [{
+                    time: alignedTime,
+                    open: tick.open,
+                    high: tick.high,
+                    low: tick.low,
+                    close: tick.close,
+                    volume: tick.volume
+                }];
+            }
 
             const lastCandle = prev[prev.length - 1];
             const tfSeconds = displayTimeframe * 60;
-            // Align to timeframe boundary
-            const lastStart = Math.floor(lastCandle.time / tfSeconds) * tfSeconds;
+            const tickAlignedTime = Math.floor(tick.time / tfSeconds) * tfSeconds;
 
-            // Check if tick belongs to the CURRENT candle or starts a NEW one
-            // Note: tick.time is the OPEN time of the source candle.
-            // If source is 5m, tick.time=10:00 covers 10:00-10:05.
-            // If display is 15m, 10:00 belongs to 10:00-10:15 candle.
-
-            const tickTime = tick.time;
-
-            // Time check: Is tick within [lastStart, lastStart + tfSeconds)?
-            if (tickTime < lastStart + tfSeconds) {
-                // Update existing
+            // Check if tick belongs to current candle or starts new one
+            if (tickAlignedTime === lastCandle.time) {
+                // Update existing candle
                 const updated = {
                     ...lastCandle,
                     high: Math.max(lastCandle.high, tick.high),
@@ -164,23 +170,42 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                 };
                 return [...prev.slice(0, -1), updated];
             } else {
-                // New Candle
-                // We should probably start it relative to the 'tick' time aligned?
-                // Or just push the tick?
-                // If we gap (e.g. overnight), the accumulation logic still holds: valid new candle.
-                return [...prev, tick];
+                // New candle starts
+                isNewCandle = true;
+                return [...prev, {
+                    time: tickAlignedTime,
+                    open: tick.open,
+                    high: tick.high,
+                    low: tick.low,
+                    close: tick.close,
+                    volume: tick.volume
+                }];
             }
         });
 
         // 2. Manage Trades
         updateTrades(tick);
 
-        // 3. Check Signals
-        if (isPlaying) {
+        // 3. Check Signals - Only check when we complete a candle of the MODEL's input timeframe
+        // For 5m mode: sourceInterval='1m', we check every 5 bars (5 minutes)
+        // For 15m mode: sourceInterval='5m', we check every 3 bars (15 minutes)
+        if (isPlaying && shouldCheckSignal(currentIndex)) {
             checkSignal(currentIndex);
         }
 
     }, [currentIndex]); // Only on index change
+    
+    // Helper to determine if we should check for signals at this index
+    const shouldCheckSignal = (idx: number): boolean => {
+        if (idx < 200) return false; // Need sufficient history
+        
+        // Check based on model's required interval
+        // Models expect 20 candles of their input timeframe
+        const checkInterval = sourceInterval === '1m' ? 5 : 3; // 5m for 1m data, 15m for 5m data
+        
+        // Check every N bars where N = minutes in target TF / minutes in source TF
+        return idx % checkInterval === 0;
+    };
 
     // Trade Management
     const updateTrades = (tick: Candle) => {
@@ -194,7 +219,7 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                     if (t.direction === 'LONG') {
                         if (tick.low <= t.sl_price) hitSL = true;
                         else if (tick.high >= t.tp_price) hitTP = true;
-                    } else {
+                    } else if (t.direction === 'SHORT') {
                         if (tick.high >= t.sl_price) hitSL = true;
                         else if (tick.low <= t.tp_price) hitTP = true;
                     }
@@ -216,25 +241,43 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                     }
                 }
 
-                // Pending Orders
+                return t;
+            });
+
+            // Handle Pending Orders - separate pass to handle OCO logic
+            let ocoGroupFilled: Record<string, boolean> = {};
+            const finalTrades = nextTrades.map(t => {
                 if (t.status === 'pending') {
-                    // Start time check?
+                    // Check if order is before entry time
                     if (tick.time < t.entry_time) return t;
 
-                    // Expiry check
-                    // t.exit_time is used as expiry? No, we don't have explicit expiry field in Trade type yet?
-                    // We can add it or just assume infinite/manual cancel.
-                    // Implementation plan said "Validity: 15m".
-                    // Let's rely on manual check or add logic if we had expiry.
-                    // Hardcode: 3 bars of source?
-                    // For now, infinite validity until filled.
+                    // Extract OCO group from ID (format: "s_123" or "b_123")
+                    const groupId = t.id.substring(2); // Remove "s_" or "b_" prefix
+                    
+                    // Check if other side of OCO was already filled
+                    if (ocoGroupFilled[groupId]) {
+                        // Cancel this pending order (OCO)
+                        return { ...t, status: 'closed', pnl: 0, exit_time: tick.time } as Trade;
+                    }
 
+                    // Check for expiry (15 minutes = 900 seconds)
+                    const elapsedTime = tick.time - t.entry_time;
+                    if (elapsedTime > 900) {
+                        // Expired
+                        return { ...t, status: 'closed', pnl: 0, exit_time: tick.time } as Trade;
+                    }
+
+                    // Check if filled
                     let filled = false;
                     if (t.direction === 'SELL' && tick.high >= t.entry_price) filled = true;
                     else if (t.direction === 'BUY' && tick.low <= t.entry_price) filled = true;
 
                     if (filled) {
-                        return { ...t, status: 'open' } as Trade;
+                        // Mark this OCO group as filled
+                        ocoGroupFilled[groupId] = true;
+                        // Convert to position: BUY -> LONG, SELL -> SHORT
+                        const positionDirection = t.direction === 'BUY' ? 'LONG' : 'SHORT';
+                        return { ...t, status: 'open', direction: positionDirection } as Trade;
                     }
                 }
 
@@ -245,9 +288,14 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
 
             // Unrealized
             let float = 0;
-            nextTrades.forEach(t => {
+            finalTrades.forEach(t => {
                 if (t.status === 'open') {
-                    const dist = t.direction === 'LONG' ? tick.close - t.entry_price : t.entry_price - tick.close;
+                    let dist = 0;
+                    if (t.direction === 'LONG') {
+                        dist = tick.close - t.entry_price;
+                    } else if (t.direction === 'SHORT') {
+                        dist = t.entry_price - tick.close;
+                    }
                     const risk = Math.abs(t.entry_price - t.sl_price);
                     const size = t.risk_amount / (risk || 1);
                     float += dist * size;
@@ -255,7 +303,7 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
             });
             setUnrealizedPnL(float);
 
-            return nextTrades;
+            return finalTrades;
         });
     };
 

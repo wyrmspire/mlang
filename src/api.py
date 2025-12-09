@@ -437,4 +437,10 @@ _last_yf_cache = {
 
 # Update fetch to populate cache
 
+@app.get("/api/yfinance/models")
+def get_yfinance_models():
+    """Get list of available models for playback."""
+    from src.model_inference import get_available_models
+    models = get_available_models()
+    return {"models": models}
 
