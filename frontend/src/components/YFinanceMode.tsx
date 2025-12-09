@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { yfinanceApi, Trade, TradeSignal } from '../api/yfinance';
+import { yfinanceApi, Trade } from '../api/yfinance';
 import { Candle } from '../api/client';
 import { YFinanceChart } from './YFinanceChart';
-import { Play, Pause, RotateCcw, Settings } from 'lucide-react';
+import { Play, Pause, RotateCcw } from 'lucide-react';
 
 export const YFinanceMode: React.FC = () => {
     // Data state
@@ -26,10 +26,9 @@ export const YFinanceMode: React.FC = () => {
     
     // UI state
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [showSettings, setShowSettings] = useState<boolean>(false);
     
     // Refs
-    const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const playbackIntervalRef = useRef<number | null>(null);
 
     // Load models on mount
     useEffect(() => {
@@ -86,7 +85,7 @@ export const YFinanceMode: React.FC = () => {
     // Playback control
     useEffect(() => {
         if (isPlaying && dateData.length > 0 && currentIndex < dateData.length) {
-            playbackIntervalRef.current = setInterval(() => {
+            playbackIntervalRef.current = window.setInterval(() => {
                 setCurrentIndex(prev => {
                     const next = prev + 1;
                     if (next >= dateData.length) {
@@ -97,14 +96,14 @@ export const YFinanceMode: React.FC = () => {
                 });
             }, playbackSpeed);
         } else {
-            if (playbackIntervalRef.current) {
+            if (playbackIntervalRef.current !== null) {
                 clearInterval(playbackIntervalRef.current);
                 playbackIntervalRef.current = null;
             }
         }
 
         return () => {
-            if (playbackIntervalRef.current) {
+            if (playbackIntervalRef.current !== null) {
                 clearInterval(playbackIntervalRef.current);
             }
         };
@@ -157,7 +156,6 @@ export const YFinanceMode: React.FC = () => {
         if (visibleData.length === 0) return;
 
         const currentCandle = visibleData[visibleData.length - 1];
-        const currentPrice = currentCandle.close;
         const currentTime = currentCandle.time;
 
         setTrades(prevTrades => {

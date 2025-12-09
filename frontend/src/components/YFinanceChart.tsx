@@ -115,15 +115,9 @@ export const YFinanceChart: React.FC<YFinanceChartProps> = ({ data, trades, curr
     useEffect(() => {
         if (!chartRef.current || !data.length) return;
 
-        // Remove previous price lines
         // Note: lightweight-charts doesn't have easy way to remove all lines,
         // so we'll rely on component remount for now
-        
-        const openTrades = trades.filter(t => t.status === 'open');
-        
-        // We can't easily draw persistent lines in lightweight-charts without managing them manually
-        // For simplicity, we'll skip drawing SL/TP lines on the chart
-        // They're shown in the sidebar which is sufficient for this use case
+        // Lines are shown in the sidebar and overlays which is sufficient
         
     }, [trades, data]);
 
