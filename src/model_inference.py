@@ -174,22 +174,15 @@ class ModelInference:
         with torch.no_grad():
             prob = self.model(inp).item()
             
-        if prob > self.THRESHOLD:
-            # Signal!
+        if prob > -1.0: # Always return
+            
             # Place Limit Orders
             limit_dist = 1.5 * current_atr
-            current_close = float(history_df.iloc[-1]['close']) # 1m close acting as proxy?
-            # Ideally we place orders based on the *5m* close, but this is a 1m trigger check.
-            # Use most recent price?
-            
-            # Direction? 
-            # The model predicts "Rejection". It usually means Mean Reversion.
-            # We place BOTH Buy and Sell Limits (OCO).
-            # The UI needs to know this.
+            current_close = float(history_df.iloc[-1]['close']) 
             
             return {
                 "signal": {
-                    "type": "OCO_LIMIT", # Dual Limits
+                    "type": "OCO_LIMIT",
                     "prob": prob,
                     "atr": current_atr,
                     "limit_dist": limit_dist,
@@ -197,11 +190,10 @@ class ModelInference:
                     "sell_limit": current_close + limit_dist,
                     "buy_limit": current_close - limit_dist,
                     "sl_dist": 1.0 * current_atr, 
-                    "validity": 15 * 60 # Seconds
+                    "validity": 15 * 60 
                 }
             }
-            
-        return None
+
 
 def get_available_models():
     return [f.stem for f in MODELS_DIR.glob("*.pth")]

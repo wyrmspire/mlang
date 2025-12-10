@@ -428,6 +428,18 @@ def get_yfinance_candles(
         if df.empty:
             raise HTTPException(status_code=400, detail=f"No data returned for {symbol}. Check symbol spelling.")
             
+        # Normalize Dataframe for Cache (Match test scripts)
+        # 1. Reset Index
+        if isinstance(df.columns, pd.MultiIndex): df.columns = df.columns.get_level_values(0)
+        df.reset_index(inplace=True)
+        # 2. Lowercase cols
+        df.columns = [c.lower() for c in df.columns]
+        # 3. Rename date/datetime to 'time'
+        if 'datetime' in df.columns: df.rename(columns={'datetime':'time'}, inplace=True)
+        elif 'date' in df.columns: df.rename(columns={'date':'time'}, inplace=True)
+        # 4. Ensure UTC
+        # df['time'] = pd.to_datetime(df['time'], utc=True) # Usually already tz-aware
+        
         # Update Cache
         _last_yf_cache['symbol'] = symbol
         _last_yf_cache['data'] = df

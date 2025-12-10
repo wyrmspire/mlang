@@ -36,6 +36,15 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
     const [totalPnL, setTotalPnL] = useState<number>(0);
     const [unrealizedPnL, setUnrealizedPnL] = useState<number>(0);
 
+    // Analysis State
+    const [lastAnalysis, setLastAnalysis] = useState<{ prob: number, atr: number, time: number } | null>(null);
+
+    // Entry Control State (Phase 12)
+    const [modelThreshold, setModelThreshold] = useState<number>(0.15);
+    const [limitFactor, setLimitFactor] = useState<number>(1.5);
+    const [slFactor, setSlFactor] = useState<number>(1.0);
+    const [entryMechanism, setEntryMechanism] = useState<'Predictive Limit' | 'Market Close'>('Predictive Limit');
+
     // UI state
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -193,15 +202,15 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
         }
 
     }, [currentIndex]); // Only on index change
-    
+
     // Helper to determine if we should check for signals at this index
     const shouldCheckSignal = (idx: number): boolean => {
         if (idx < 200) return false; // Need sufficient history
-        
+
         // Check based on model's required interval
         // Models expect 20 candles of their input timeframe
         const checkInterval = sourceInterval === '1m' ? 5 : 3; // 5m for 1m data, 15m for 5m data
-        
+
         // Check every N bars where N = minutes in target TF / minutes in source TF
         return idx % checkInterval === 0;
     };
@@ -214,26 +223,20 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                 // Open Positions
                 if (t.status === 'open') {
                     let hitSL = false, hitTP = false;
-                    // Check SL/TP based on direction
+                    // MATCHING TEST SCRIPT: TP Check FIRST (Optimistic)
                     if (t.direction === 'LONG') {
-                        if (tick.low <= t.sl_price) hitSL = true;
-                        else if (tick.high >= t.tp_price) hitTP = true;
+                        if (tick.high >= t.tp_price) hitTP = true;
+                        else if (tick.low <= t.sl_price) hitSL = true;
                     } else if (t.direction === 'SHORT') {
-                        if (tick.high >= t.sl_price) hitSL = true;
-                        else if (tick.low <= t.tp_price) hitTP = true;
+                        if (tick.low <= t.tp_price) hitTP = true;
+                        else if (tick.high >= t.sl_price) hitSL = true;
                     } else {
-                        // Unknown direction - should not happen, but close position safely
                         console.error(`Unknown position direction: ${t.direction}`);
                         return { ...t, status: 'closed', pnl: 0, exit_time: tick.time } as Trade;
                     }
 
-                    if (hitSL) {
-                        const loss = -Math.abs(t.risk_amount);
-                        pnlRealized += loss;
-                        return { ...t, status: 'closed', pnl: loss, exit_price: t.sl_price, exit_time: tick.time } as Trade;
-                    }
                     if (hitTP) {
-                        // Calculate Reward based on Distances
+                        // Win
                         const risk = Math.abs(t.entry_price - t.sl_price);
                         const reward = Math.abs(t.entry_price - t.tp_price);
                         const rMultiple = reward / (risk || 1);
@@ -242,8 +245,12 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                         pnlRealized += win;
                         return { ...t, status: 'closed', pnl: win, exit_price: t.tp_price, exit_time: tick.time } as Trade;
                     }
+                    if (hitSL) {
+                        const loss = -Math.abs(t.risk_amount);
+                        pnlRealized += loss;
+                        return { ...t, status: 'closed', pnl: loss, exit_price: t.sl_price, exit_time: tick.time } as Trade;
+                    }
                 }
-
                 return t;
             });
 
@@ -256,7 +263,7 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
 
                     // Extract OCO group from ID (format: "s_123" or "b_123")
                     const groupId = t.id.substring(2); // Remove "s_" or "b_" prefix
-                    
+
                     // Check if other side of OCO was already filled
                     if (ocoGroupFilled[groupId]) {
                         // Cancel this pending order (OCO)
@@ -272,15 +279,29 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
 
                     // Check if filled
                     let filled = false;
-                    if (t.direction === 'SELL' && tick.high >= t.entry_price) filled = true;
-                    else if (t.direction === 'BUY' && tick.low <= t.entry_price) filled = true;
+                    let fillPrice = t.entry_price;
+
+                    if (t.direction === 'SELL') {
+                        if (tick.high >= t.entry_price) {
+                            filled = true;
+                            // Gap Check: If Open is HIGHER than limit, we get filled at Open (Better Price)
+                            fillPrice = Math.max(tick.open, t.entry_price);
+                        }
+                    } else if (t.direction === 'BUY') {
+                        if (tick.low <= t.entry_price) {
+                            filled = true;
+                            // Gap Check: If Open is LOWER than limit, we get filled at Open (Better Price)
+                            fillPrice = Math.min(tick.open, t.entry_price);
+                        }
+                    }
 
                     if (filled) {
                         // Mark this OCO group as filled
                         ocoGroupFilled[groupId] = true;
                         // Convert to position: BUY -> LONG, SELL -> SHORT
                         const positionDirection = t.direction === 'BUY' ? 'LONG' : 'SHORT';
-                        return { ...t, status: 'open', direction: positionDirection } as Trade;
+                        // Update entry_price to the actual fill price
+                        return { ...t, status: 'open', direction: positionDirection, entry_price: fillPrice } as Trade;
                     }
                 }
 
@@ -312,22 +333,35 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
 
     const checkSignal = async (idx: number) => {
         try {
-            // current timestamp
             const dateStr = new Date(allData[idx].time * 1000).toISOString().split('T')[0];
-
             const resp = await yfinanceApi.analyzeCandle(idx, selectedModel, symbol, dateStr);
+
             if (resp && resp.signal) {
                 const s = resp.signal;
+                const prob = s.prob || 0;
+                const atr = s.atr || 0;
 
-                // OCO Logic
-                if (s.type === 'OCO_LIMIT') {
-                    // Two pending orders
+                setLastAnalysis({ prob, atr, time: allData[idx].time });
+
+                // Frontend Decision Logic (Phase 12)
+                if (prob < modelThreshold) return; // Sensitivity Check
+
+                const currentPrice = allData[idx].close;
+
+                if (entryMechanism === 'Predictive Limit') {
+                    // Create Limit Orders based on Factors
+                    const limitDist = limitFactor * atr;
+                    const slDist = slFactor * atr;
+
+                    const sellLimit = currentPrice + limitDist;
+                    const buyLimit = currentPrice - limitDist;
+
                     const sell: Trade = {
                         id: `s_${idx}`,
                         direction: 'SELL',
-                        entry_price: s.sell_limit || 0,
-                        sl_price: (s.sell_limit || 0) + (s.sl_dist || 0),
-                        tp_price: s.current_price || 0, // Target Reversion to Mean
+                        entry_price: sellLimit,
+                        sl_price: sellLimit + slDist,
+                        tp_price: currentPrice, // Target Mean
                         entry_time: allData[idx].time,
                         status: 'pending',
                         risk_amount: riskAmount
@@ -335,23 +369,24 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                     const buy: Trade = {
                         id: `b_${idx}`,
                         direction: 'BUY',
-                        entry_price: s.buy_limit || 0,
-                        sl_price: (s.buy_limit || 0) - (s.sl_dist || 0),
-                        tp_price: s.current_price || 0,
+                        entry_price: buyLimit,
+                        sl_price: buyLimit - slDist,
+                        tp_price: currentPrice,
                         entry_time: allData[idx].time,
                         status: 'pending',
                         risk_amount: riskAmount
                     };
 
-                    // Avoid duplicates?
-                    // Simple check: don't add if we just added same ID
-                    setTrades(prev => {
-                        if (prev.some(p => p.id === `s_${idx}`)) return prev;
-                        return [...prev, sell, buy];
-                    });
+                    setTrades(prev => [...prev, sell, buy]);
                 }
+            } else {
+                // No signal (Warmup or Error)
+                setLastAnalysis({ prob: 0, atr: 0, time: allData[idx].time });
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error(e);
+            setLastAnalysis({ prob: -1, atr: 0, time: allData[idx].time }); // Error state
+        }
     };
 
     const openTrades = trades.filter(t => t.status === 'open');
@@ -390,9 +425,9 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                     <div style={{ fontSize: '10px', color: '#777' }}>Max: ~7d (1m), ~60d (5m)</div>
 
                     <label style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                        <input 
-                            type="checkbox" 
-                            checked={useMockData} 
+                        <input
+                            type="checkbox"
+                            checked={useMockData}
                             onChange={e => setUseMockData(e.target.checked)}
                             style={{ cursor: 'pointer' }}
                         />
@@ -423,6 +458,39 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                     </select>
                 </div>
 
+                <div className="control-group" style={{ marginBottom: '20px', borderTop: '1px solid #444', paddingTop: '10px' }}>
+                    <h3 style={{ fontSize: '14px', marginBottom: '10px' }}>Entry Mechanism</h3>
+
+                    <label>Sensitivity ({(modelThreshold * 100).toFixed(0)}%)</label>
+                    <input
+                        type="range" min="0" max="100" step="1"
+                        value={modelThreshold * 100}
+                        onChange={e => setModelThreshold(Number(e.target.value) / 100)}
+                        style={{ width: '100%' }}
+                    />
+
+                    <label style={{ display: 'block', marginTop: '5px' }}>Method</label>
+                    <select value={entryMechanism} onChange={e => setEntryMechanism(e.target.value as any)} style={{ width: '100%', padding: '5px' }}>
+                        <option>Predictive Limit</option>
+                        <option disabled>Market Close (Not Implemented)</option>
+                    </select>
+
+                    {entryMechanism === 'Predictive Limit' && (
+                        <>
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '11px' }}>Limit (xATR)</label>
+                                    <input type="number" step="0.1" value={limitFactor} onChange={e => setLimitFactor(Number(e.target.value))} style={{ width: '100%', padding: '5px' }} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '11px' }}>Stop (xATR)</label>
+                                    <input type="number" step="0.1" value={slFactor} onChange={e => setSlFactor(Number(e.target.value))} style={{ width: '100%', padding: '5px' }} />
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+
                 {/* Stats */}
                 <div style={{ background: '#333', padding: '10px', borderRadius: '4px' }}>
                     <div>Realized PnL: <strong style={{ color: totalPnL >= 0 ? '#4caf50' : '#f44336' }}>${totalPnL.toFixed(2)}</strong></div>
@@ -443,6 +511,29 @@ export const YFinanceMode: React.FC<YFinanceModeProps> = ({ onBack }) => {
                     <input type="range" min="10" max="1000" step="10" value={playbackSpeed} onChange={e => setPlaybackSpeed(Number(e.target.value))} />
                     <span>{playbackSpeed}ms</span>
                     <span style={{ marginLeft: 'auto' }}>{allData[currentIndex]?.time ? new Date(allData[currentIndex].time * 1000).toLocaleString() : '--'}</span>
+                </div>
+
+                {/* Signal Indicator (Green Light) */}
+                <div style={{ position: 'absolute', bottom: '20px', left: '320px', background: 'rgba(0,0,0,0.7)', padding: '10px', borderRadius: '8px', display: 'flex', gap: '15px', alignItems: 'center', zIndex: 100, border: '1px solid #555' }}>
+                    <div style={{
+                        width: '30px', height: '30px', borderRadius: '50%',
+                        background: lastAnalysis ? `rgba(0, 255, 0, ${lastAnalysis.prob})` : '#333',
+                        border: '2px solid #555',
+                        boxShadow: lastAnalysis && lastAnalysis.prob > 0.5 ? `0 0 10px rgba(0,255,0,${lastAnalysis.prob})` : 'none',
+                        transition: 'background 0.3s'
+                    }} />
+                    <div>
+                        <div style={{ fontSize: '10px', color: '#aaa' }}>MODEL INFLUENCE</div>
+                        <div style={{ fontSize: '16px', fontWeight: 'bold', color: lastAnalysis ? '#fff' : '#777' }}>
+                            {lastAnalysis ? `${(lastAnalysis.prob * 100).toFixed(1)}%` : '--'}
+                        </div>
+                    </div>
+                    <div style={{ borderLeft: '1px solid #555', paddingLeft: '10px' }}>
+                        <div style={{ fontSize: '10px', color: '#aaa' }}>ATR (15m)</div>
+                        <div style={{ fontSize: '14px', color: '#ddd' }}>
+                            {lastAnalysis ? lastAnalysis.atr.toFixed(2) : '--'}
+                        </div>
+                    </div>
                 </div>
 
                 <div style={{ flex: 1 }}>
