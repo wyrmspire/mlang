@@ -1,0 +1,15 @@
+{
+  "architecture": "CNN_Classic",
+  "window_size": 30,
+  "candle_composition": "30x1m+0x3m+0x5m+0x15m",
+  "epochs": 15,
+  "learning_rate": 0.001,
+  "train_samples": 3488,
+  "val_samples": 873,
+  "test_samples": 1869,
+  "best_val_acc": 0.693012600229095,
+  "test_acc": 0.6853932584269663,
+  "train_win_rate": 0.349197247706422,
+  "test_win_rate": 0.3146067415730337,
+  "model_path": "C:\\mlang\\models\\sweep_CNN_Classic_best_geometry.pth"
+}

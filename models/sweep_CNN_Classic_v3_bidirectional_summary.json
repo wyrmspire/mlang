@@ -1,0 +1,15 @@
+{
+  "architecture": "CNN_Classic",
+  "window_size": 20,
+  "candle_composition": "20x1m+0x3m+0x5m+0x15m",
+  "epochs": 20,
+  "learning_rate": 0.001,
+  "train_samples": 6316,
+  "val_samples": 1579,
+  "test_samples": 3384,
+  "best_val_acc": 0.8372387587080431,
+  "test_acc": 0.8182624113475178,
+  "train_win_rate": 0.16386953768207727,
+  "test_win_rate": 0.17346335697399526,
+  "model_path": "C:\\mlang\\models\\sweep_CNN_Classic_v3_bidirectional.pth"
+}

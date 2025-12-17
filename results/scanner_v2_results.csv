@@ -1,0 +1,11 @@
+oco_config,direction,r_mult,trades,wins,win_rate,total_pnl,ev_per_trade
+LONG_1.0R,LONG,1.0,0,0,0,0.0,0
+LONG_1.4R,LONG,1.4,0,0,0,0.0,0
+LONG_2.0R,LONG,2.0,0,0,0,0.0,0
+LONG_1.8R,LONG,1.8,0,0,0,0.0,0
+LONG_2.5R,LONG,2.5,0,0,0,0.0,0
+SHORT_1.0R,SHORT,1.0,0,0,0,0.0,0
+SHORT_1.4R,SHORT,1.4,0,0,0,0.0,0
+SHORT_2.0R,SHORT,2.0,0,0,0,0.0,0
+SHORT_1.8R,SHORT,1.8,0,0,0,0.0,0
+SHORT_2.5R,SHORT,2.5,0,0,0,0.0,0

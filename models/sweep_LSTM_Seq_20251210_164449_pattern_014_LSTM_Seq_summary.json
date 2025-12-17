@@ -1,0 +1,15 @@
+{
+  "architecture": "LSTM_Seq",
+  "window_size": 30,
+  "candle_composition": "30x1m+0x3m+0x5m+0x15m",
+  "epochs": 10,
+  "learning_rate": 0.001,
+  "train_samples": 54,
+  "val_samples": 14,
+  "test_samples": 30,
+  "best_val_acc": 0.5,
+  "test_acc": 0.5,
+  "train_win_rate": 0.5925925925925926,
+  "test_win_rate": 0.5,
+  "model_path": "C:\\mlang\\models\\sweep_LSTM_Seq_20251210_164449_pattern_014_LSTM_Seq.pth"
+}

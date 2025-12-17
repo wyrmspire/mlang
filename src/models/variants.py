@@ -4,7 +4,7 @@ import torch.nn as nn
 
 class CNN_Classic(nn.Module):
     """
-    Original Architecture: 20-bar lookback, 4 channels (O,H,L,C).
+    Original Architecture: 4 channels (O,H,L,C).
     2 Conv layers + FC.
     """
     def __init__(self, input_dim=4, seq_len=20):
@@ -12,18 +12,27 @@ class CNN_Classic(nn.Module):
         self.features = nn.Sequential(
             nn.Conv1d(input_dim, 16, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(2), # 20 -> 10
+            nn.MaxPool1d(2), 
             nn.Conv1d(16, 32, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(2), # 10 -> 5
+            nn.MaxPool1d(2),
         )
+        
+        # Calculate flattened size
+        self.flat_size = self._get_flat_size(input_dim, seq_len)
+        
         self.fc = nn.Sequential(
-            nn.Linear(32 * 5, 64),
+            nn.Linear(self.flat_size, 64),
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(64, 1),
             nn.Sigmoid()
         )
+        
+    def _get_flat_size(self, c, l):
+        dummy = torch.zeros(1, c, l)
+        out = self.features(dummy)
+        return out.numel() // out.size(0)
         
     def forward(self, x):
         # x: (Batch, Seq, Dim) -> (Batch, Dim, Seq)
@@ -42,21 +51,29 @@ class CNN_Wide(nn.Module):
         self.features = nn.Sequential(
             nn.Conv1d(input_dim, 16, kernel_size=5, padding=2),
             nn.ReLU(),
-            nn.MaxPool1d(2), # 60 -> 30
+            nn.MaxPool1d(2),
             nn.Conv1d(16, 32, kernel_size=5, padding=2),
             nn.ReLU(),
-            nn.MaxPool1d(2), # 30 -> 15
+            nn.MaxPool1d(2),
             nn.Conv1d(32, 64, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(3), # 15 -> 5
+            nn.MaxPool1d(3),
         )
+        
+        self.flat_size = self._get_flat_size(input_dim, seq_len)
+        
         self.fc = nn.Sequential(
-            nn.Linear(64 * 5, 128),
+            nn.Linear(self.flat_size, 128),
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(128, 1),
             nn.Sigmoid()
         )
+        
+    def _get_flat_size(self, c, l):
+        dummy = torch.zeros(1, c, l)
+        out = self.features(dummy)
+        return out.numel() // out.size(0)
         
     def forward(self, x):
         x = x.transpose(1, 2)

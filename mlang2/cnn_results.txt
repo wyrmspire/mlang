@@ -1,0 +1,54 @@
+============================================================
+MLang2 CNN Training + Model-Filtered Testing
+GPU: CUDA
+============================================================
+
+[1] Loading data...
+Train: 38518 bars
+Test: 6540 bars
+Average 5m ATR: 8.73
+
+[2] Generating training data with price windows...
+Generated 582 training samples (excluding timeouts)
+Class balance: 233 WIN (40.0%), 349 LOSS
+
+[3] Training CNN...
+Epoch  1 - Train Loss: 0.6912, Val Loss: 0.6929, Val Acc: 57.3%
+Epoch  2 - Train Loss: 0.6929, Val Loss: 0.6871, Val Acc: 49.6%
+Epoch  3 - Train Loss: 0.6918, Val Loss: 0.6871, Val Acc: 49.6%
+Epoch  4 - Train Loss: 0.6900, Val Loss: 0.6920, Val Acc: 55.6%
+Epoch  5 - Train Loss: 0.6838, Val Loss: 0.6875, Val Acc: 53.0%
+Epoch  6 - Train Loss: 0.6772, Val Loss: 0.6892, Val Acc: 52.1%
+Epoch  7 - Train Loss: 0.6829, Val Loss: 0.6886, Val Acc: 50.4%
+Epoch  8 - Train Loss: 0.6801, Val Loss: 0.6926, Val Acc: 55.6%
+Epoch  9 - Train Loss: 0.6846, Val Loss: 0.6917, Val Acc: 43.6%
+Epoch 10 - Train Loss: 0.6783, Val Loss: 0.6979, Val Acc: 58.1%
+Epoch 11 - Train Loss: 0.6695, Val Loss: 0.6951, Val Acc: 53.8%
+Epoch 12 - Train Loss: 0.6583, Val Loss: 0.6937, Val Acc: 53.0%
+Epoch 13 - Train Loss: 0.6617, Val Loss: 0.7083, Val Acc: 56.4%
+Epoch 14 - Train Loss: 0.6462, Val Loss: 0.7056, Val Acc: 44.4%
+Epoch 15 - Train Loss: 0.6460, Val Loss: 0.7208, Val Acc: 55.6%
+
+Best model saved to models/cnn_filter.pth
+
+[4] Testing on Week 7 with model filtering...
+
+Total Week 7 opportunities: 105
+
+[5] Results by threshold:
+------------------------------------------------------------
+Threshold    Trades   Wins   Win Rate   PnL          Avg PnL
+------------------------------------------------------------
+>= 0.0       105      42     43.3%      $32.50       $0.31
+>= 0.3       105      42     43.3%      $32.50       $0.31
+>= 0.4       105      42     43.3%      $32.50       $0.31
+>= 0.5       81       34     44.7%      $128.75      $1.59
+------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\mlang\mlang2\test_cnn_filter.py", line 270, in <module>
+    print("\n\u2705 KEY: If higher thresholds improve WR and PnL, the model is working!")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 2: character maps to <undefined>

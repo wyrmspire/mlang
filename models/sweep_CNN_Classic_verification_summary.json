@@ -1,0 +1,15 @@
+{
+  "architecture": "CNN_Classic",
+  "window_size": 30,
+  "candle_composition": "30x1m+0x3m+0x5m+0x15m",
+  "epochs": 5,
+  "learning_rate": 0.001,
+  "train_samples": 28,
+  "val_samples": 7,
+  "test_samples": 15,
+  "best_val_acc": 0.14285714285714285,
+  "test_acc": 0.7333333333333333,
+  "train_win_rate": 0.32142857142857145,
+  "test_win_rate": 0.26666666666666666,
+  "model_path": "C:\\mlang\\models\\sweep_CNN_Classic_verification.pth"
+}

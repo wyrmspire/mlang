@@ -1,0 +1,39 @@
+============================================================
+MLang2 Walk-Forward Test
+Train: 6 weeks, Test: Week 7
+============================================================
+
+[1] Loading data...
+Total bars: 179587
+Train: 38518 bars (2025-03-17 to 2025-04-27)
+Test: 6540 bars (2025-04-28 to 2025-05-04)
+
+[2] Resampling to higher timeframes...
+5m bars (train): 7732
+
+[3] Computing ATR...
+Average 5m ATR: 8.73 points
+
+[4] OCO Config: LONG, 1.4R, stop=1.0ATR
+
+[5] Generating training decision points...
+Generated 635 training decision points
+
+[6] Training Outcomes:
+  Wins: 233 (36.7%)
+  Losses: 348 (54.8%)
+  Timeouts: 54 (8.5%)
+  Total PnL: $-2212.50
+
+[7] Testing on Week 7...
+
+[8] Test Week 7 Results:
+  Total trades: 106
+  Wins: 43 (40.6%)
+  Losses: 55 (51.9%)
+  Total PnL: $91.25
+  Avg PnL per trade: $0.86
+
+============================================================
+Test complete!
+============================================================
