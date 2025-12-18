@@ -7,8 +7,11 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 import uuid
+
+if TYPE_CHECKING:
+    from src.viz.export import Exporter
 
 from src.experiments.config import ExperimentConfig
 from src.experiments.fingerprint import compute_fingerprint
@@ -65,7 +68,10 @@ class ExperimentResult:
         }
 
 
-def run_experiment(config: ExperimentConfig) -> ExperimentResult:
+def run_experiment(
+    config: ExperimentConfig,
+    exporter: Optional['Exporter'] = None
+) -> ExperimentResult:
     """
     Run a complete experiment:
     
@@ -75,6 +81,10 @@ def run_experiment(config: ExperimentConfig) -> ExperimentResult:
     4. Write to shards
     5. Train model
     6. Return results
+    
+    Args:
+        config: Experiment configuration
+        exporter: Optional Exporter for viz output
     """
     print(f"Running experiment: {config.name}")
     
@@ -166,6 +176,10 @@ def run_experiment(config: ExperimentConfig) -> ExperimentResult:
         record.cf_bars_held = cf_label.bars_held
         
         records.append(record)
+        
+        # === VIZ EXPORT HOOK ===
+        if exporter:
+            exporter.on_decision(record, features)
         
         # Update cooldown if trade placed
         if record.action == Action.PLACE_ORDER:

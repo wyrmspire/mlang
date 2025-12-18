@@ -189,3 +189,102 @@ def label_is_good_skip(cf_label: CounterfactualLabel) -> bool:
 def label_is_bad_skip(cf_label: CounterfactualLabel) -> bool:
     """Trade we skipped but should have taken (would have won)."""
     return cf_label.outcome == 'WIN'
+
+
+def compute_smart_stop_counterfactual(
+    df: pd.DataFrame,
+    entry_idx: int,
+    direction: str,
+    stop_price: float,
+    tp_multiple: float,
+    atr: float,
+    fill_config: BarFillConfig = None,
+    costs: CostModel = None,
+    max_bars: int = 200,
+    oco_name: str = ""
+) -> CounterfactualLabel:
+    """
+    Compute counterfactual with pre-calculated stop price.
+    
+    Use this with stop_calculator for smart stops based on
+    candle levels, ranges, swings, etc.
+    
+    Args:
+        df: Full dataframe
+        entry_idx: Bar index of decision point
+        direction: 'LONG' or 'SHORT'
+        stop_price: Pre-calculated stop price (from stop_calculator)
+        tp_multiple: R multiple for take profit
+        atr: ATR for reference (not used for stop)
+        fill_config: Bar fill configuration
+        costs: Cost model
+        max_bars: Max bars to simulate
+        oco_name: Name for this configuration
+        
+    Returns:
+        CounterfactualLabel with complete outcome info
+    """
+    costs = costs or DEFAULT_COSTS
+    fill_config = fill_config or BarFillConfig()
+    
+    entry_bar = df.iloc[entry_idx]
+    entry_price = entry_bar['close']
+    
+    # Calculate risk and TP
+    if direction == "LONG":
+        risk = entry_price - stop_price
+        tp_price = entry_price + (risk * tp_multiple)
+    else:
+        risk = stop_price - entry_price
+        tp_price = entry_price - (risk * tp_multiple)
+    
+    # Round to tick
+    stop_price = costs.round_to_tick(stop_price, 'down' if direction == 'LONG' else 'up')
+    tp_price = costs.round_to_tick(tp_price, 'up' if direction == 'LONG' else 'down')
+    
+    # Create future provider
+    future_provider = FutureWindowProvider(df, entry_idx)
+    
+    # Compute outcome
+    outcome = compute_trade_outcome(
+        future_provider=future_provider,
+        entry_price=entry_price,
+        direction=direction,
+        stop_loss=stop_price,
+        take_profit=tp_price,
+        max_bars=max_bars,
+        fill_config=fill_config
+    )
+    
+    # Calculate dollar PnL
+    pnl_dollars = costs.calculate_pnl(
+        entry_price,
+        outcome.exit_price,
+        direction,
+        contracts=1,
+        include_commission=True
+    )
+    
+    # Create a minimal OCOConfig for storage
+    oco_config = OCOConfig(
+        direction=direction,
+        stop_atr=0,  # Not used
+        tp_multiple=tp_multiple,
+        name=oco_name
+    )
+    
+    return CounterfactualLabel(
+        outcome=outcome.outcome,
+        pnl=outcome.pnl,
+        pnl_dollars=pnl_dollars,
+        mae=outcome.mae,
+        mfe=outcome.mfe,
+        mae_atr=outcome.mae / atr if atr > 0 else 0,
+        mfe_atr=outcome.mfe / atr if atr > 0 else 0,
+        bars_held=outcome.bars_held,
+        entry_price=entry_price,
+        exit_price=outcome.exit_price,
+        stop_price=stop_price,
+        tp_price=tp_price,
+        oco_config=oco_config,
+    )

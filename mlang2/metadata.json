@@ -1,0 +1,5 @@
+{
+  "name": "Trade Viz Agent",
+  "description": "A React visualization tool for trading algorithm decisions with a mock agent interface.",
+  "requestFramePermissions": []
+}

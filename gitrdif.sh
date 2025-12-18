@@ -57,6 +57,35 @@ echo "Generating diff: local $BRANCH vs $REMOTE_BRANCH..."
         echo ""
     fi
     
+    # NEW: Show contents of untracked files (new files not yet staged)
+    UNTRACKED=$(git ls-files --others --exclude-standard 2>/dev/null)
+    if [ -n "$UNTRACKED" ]; then
+        echo "### New Untracked Files"
+        echo ""
+        for file in $UNTRACKED; do
+            # Skip binary files and very large files
+            if [ -f "$file" ] && file "$file" | grep -q text; then
+                LINES=$(wc -l < "$file" 2>/dev/null || echo "0")
+                if [ "$LINES" -lt 500 ]; then
+                    echo "#### \`$file\`"
+                    echo ""
+                    echo '```'
+                    cat "$file" 2>/dev/null
+                    echo '```'
+                    echo ""
+                else
+                    echo "#### \`$file\` ($LINES lines - truncated)"
+                    echo ""
+                    echo '```'
+                    head -100 "$file" 2>/dev/null
+                    echo "... ($LINES total lines)"
+                    echo '```'
+                    echo ""
+                fi
+            fi
+        done
+    fi
+    
     echo "---"
     echo ""
     

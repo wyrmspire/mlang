@@ -9,13 +9,15 @@
 # Excludes:
 #   - __pycache__
 #   - .git
+#   - node_modules
+#   - dist, .next, build
 #   - data/ (raw data files)
 #   - cache/
 #   - shards/
 #   - models/ (trained weights)
 #   - results/
 #   - *.parquet, *.pth, *.json (data files)
-#   - *.pyc
+#   - *.pyc, *.lock
 #
 # Usage: ./printcode.sh
 # =============================================================================
@@ -33,22 +35,47 @@ echo "# MLang2 Project Code Dump" > "$TEMP_FILE"
 echo "Generated: $(date)" >> "$TEMP_FILE"
 echo "" >> "$TEMP_FILE"
 
+# Common excludes
+EXCLUDES=(
+    "*/__pycache__/*"
+    "*/.git/*"
+    "*/node_modules/*"
+    "*/dist/*"
+    "*/.next/*"
+    "*/build/*"
+    "*/data/*"
+    "*/cache/*"
+    "*/shards/*"
+    "*/results/*"
+    "*/.venv/*"
+    "*/venv/*"
+)
+
 # Project structure
 echo "## Project Structure" >> "$TEMP_FILE"
 echo '```' >> "$TEMP_FILE"
 find "$PROJECT_ROOT" -type f \
     ! -path "*/__pycache__/*" \
     ! -path "*/.git/*" \
+    ! -path "*/node_modules/*" \
+    ! -path "*/dist/*" \
+    ! -path "*/.next/*" \
+    ! -path "*/build/*" \
     ! -path "*/data/*" \
     ! -path "*/cache/*" \
     ! -path "*/shards/*" \
     ! -path "*/models/*.pth" \
     ! -path "*/results/*" \
+    ! -path "*/.venv/*" \
+    ! -path "*/venv/*" \
     ! -name "*.pyc" \
     ! -name "*.parquet" \
     ! -name "*.pth" \
+    ! -name "*.lock" \
+    ! -name "package-lock.json" \
     ! -name "continuous_contract.json" \
     ! -name "dump*.md" \
+    ! -name "dump*" \
     | sed "s|$PROJECT_ROOT/||" \
     | sort >> "$TEMP_FILE"
 echo '```' >> "$TEMP_FILE"
@@ -58,13 +85,19 @@ echo "" >> "$TEMP_FILE"
 echo "## Source Files" >> "$TEMP_FILE"
 echo "" >> "$TEMP_FILE"
 
-find "$PROJECT_ROOT" -type f \( -name "*.py" -o -name "*.sh" -o -name "*.md" -o -name "*.yaml" -o -name "*.yml" \) \
+find "$PROJECT_ROOT" -type f \( -name "*.py" -o -name "*.sh" -o -name "*.md" -o -name "*.yaml" -o -name "*.yml" -o -name "*.ts" -o -name "*.tsx" -o -name "*.css" \) \
     ! -path "*/__pycache__/*" \
     ! -path "*/.git/*" \
+    ! -path "*/node_modules/*" \
+    ! -path "*/dist/*" \
+    ! -path "*/.next/*" \
+    ! -path "*/build/*" \
     ! -path "*/data/*" \
     ! -path "*/cache/*" \
     ! -path "*/shards/*" \
     ! -path "*/results/*" \
+    ! -path "*/.venv/*" \
+    ! -path "*/venv/*" \
     ! -name "dump*.md" \
     | sort | while read -r file; do
     
@@ -80,6 +113,9 @@ find "$PROJECT_ROOT" -type f \( -name "*.py" -o -name "*.sh" -o -name "*.md" -o 
         sh) lang="bash" ;;
         md) lang="markdown" ;;
         yaml|yml) lang="yaml" ;;
+        ts) lang="typescript" ;;
+        tsx) lang="tsx" ;;
+        css) lang="css" ;;
         *) lang="" ;;
     esac
     
@@ -99,9 +135,10 @@ echo "Splitting into $num_files files..."
 
 # Remove old dump files
 rm -f "$PROJECT_ROOT"/${OUTPUT_PREFIX}*.md
+rm -f "$PROJECT_ROOT"/${OUTPUT_PREFIX}[0-9]*
 
-# Split
-split -l $LINES_PER_FILE -d -a 1 "$TEMP_FILE" "$PROJECT_ROOT/${OUTPUT_PREFIX}"
+# Split (use 2-digit suffix to handle more files)
+split -l $LINES_PER_FILE -d -a 2 "$TEMP_FILE" "$PROJECT_ROOT/${OUTPUT_PREFIX}"
 
 # Rename to .md
 for f in "$PROJECT_ROOT"/${OUTPUT_PREFIX}*; do

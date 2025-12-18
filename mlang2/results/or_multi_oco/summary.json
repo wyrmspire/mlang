@@ -1,0 +1,29 @@
+{
+  "start_date": "2025-03-17",
+  "end_date": "2025-04-07",
+  "weeks": 3,
+  "stop_type": "OR_LEVEL",
+  "tp_multiples": [
+    1.0,
+    1.5,
+    2.0
+  ],
+  "total_triggers": 45,
+  "long_triggers": 17,
+  "short_triggers": 28,
+  "oco_pnl_totals": {
+    "LONG_OR_1.0R": -63.75,
+    "LONG_OR_1.5R": -62.5,
+    "LONG_OR_2.0R": -62.5,
+    "SHORT_OR_1.0R": -98.75,
+    "SHORT_OR_1.5R": -95.0,
+    "SHORT_OR_2.0R": -98.75
+  },
+  "best_oco_counts": {
+    "LONG_OR_1.0R": 16,
+    "LONG_OR_1.5R": 1,
+    "SHORT_OR_1.0R": 25,
+    "SHORT_OR_2.0R": 2,
+    "SHORT_OR_1.5R": 1
+  }
+}
